@@ -59,8 +59,12 @@ Pushing to `main` builds and deploys automatically. Set **Settings → Pages →
 **GitHub Actions** once, and that is the whole setup.
 
 The workflow (`.github/workflows/deploy.yml`) installs, downloads the course files, checks the
-content against them, lints, builds with the right base path, and publishes. Pull requests run the
-same build without deploying, so a broken content file is caught before it reaches the site.
+content against them, lints, builds, and publishes. Pull requests run the same build without
+deploying, so a broken content file is caught before it reaches the site.
+
+It asks the Pages API where the site is actually served from rather than guessing, so the base path
+comes out right whether that is a custom domain (`/`), a user site (`/`), or a project site
+(`/<repo>/`). This repository serves from <https://courses.kiarashs.ir>, so the base path is `/`.
 
 ## Course files
 
@@ -105,9 +109,10 @@ rather not use Actions. It needs **Pages → Source** set to the `gh-pages` bran
 one method or the other — with the source set to GitHub Actions, a `gh-pages` push publishes
 nothing.
 
-The base path is worked out from the repository name: `/Academic-Course-Management/` for a project
-site, `/` for a `<user>.github.io` repo. Override it with `BASE_PATH=/ npm run build` for a custom
-domain.
+A manual build defaults to a base path of `/`, which is what this repository's custom domain needs.
+Pass `BASE_PATH=/Academic-Course-Management/ npm run build` to produce a build for the plain
+`github.io` project URL instead. The Actions build never needs this — it reads the real value from
+the Pages API.
 
 ## Editing in the browser
 

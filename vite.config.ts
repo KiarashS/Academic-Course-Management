@@ -9,11 +9,13 @@ const root = fileURLToPath(new URL('.', import.meta.url))
 const COURSE_FILES_ROOT = join(root, 'public', 'courses')
 
 /**
- * GitHub Pages serves a project site from /<repo>/. Override with BASE_PATH
- * when deploying somewhere else (a user site, a custom domain, Netlify…).
- * The dev server stays at / so local URLs are not prefixed.
+ * Where the built site is served from. The deploy workflow asks the Pages API
+ * and passes the answer in BASE_PATH, which covers a custom domain (/), a user
+ * site (/) and a project site (/<repo>/) without anyone having to remember.
+ * The default suits this repository's custom domain; set BASE_PATH for a manual
+ * build that lands somewhere else. The dev server always stays at /.
  */
-const productionBase = process.env.BASE_PATH ?? '/Academic-Course-Management/'
+const productionBase = process.env.BASE_PATH ?? '/'
 
 /** Lets `import content from '../content/courses.yaml'` work like JSON. */
 function yamlPlugin(): Plugin {

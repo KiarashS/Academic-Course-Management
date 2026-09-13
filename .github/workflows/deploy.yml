@@ -54,15 +54,27 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # A project site is served from /<repo>/; a <user>.github.io repo from /.
+      # Ask Pages where the site actually lives rather than guessing. A custom
+      # domain serves from /, a project site from /<repo>/, a user site from /.
       - name: Work out the base path
         id: base
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "${{ github.event.repository.name }}" == *.github.io ]]; then
-            echo "path=/" >> "$GITHUB_OUTPUT"
+          url=$(gh api "repos/${{ github.repository }}/pages" --jq '.html_url' 2>/dev/null || true)
+          if [ -n "$url" ]; then
+            path=$(node -e 'const u = new URL(process.argv[1]); let p = u.pathname; if (!p.endsWith("/")) p += "/"; console.log(p)' "$url")
+            echo "Pages serves $url, so the base path is $path"
           else
-            echo "path=/${{ github.event.repository.name }}/" >> "$GITHUB_OUTPUT"
+            # Pages not configured yet: fall back to the repository name.
+            name='${{ github.event.repository.name }}'
+            case "$name" in
+              *.github.io) path="/" ;;
+              *) path="/$name/" ;;
+            esac
+            echo "::warning::Pages is not configured yet; guessing the base path is $path"
           fi
+          echo "path=$path" >> "$GITHUB_OUTPUT"
 
       - name: Build
         env:
