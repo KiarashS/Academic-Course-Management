@@ -5,6 +5,7 @@ import { Topbar } from './Topbar'
 import { CommandPalette } from './CommandPalette'
 import { ToastRegion } from './ToastRegion'
 import { usePreferences } from '../../store/PreferencesProvider'
+import { DraftBanner } from './DraftBanner'
 
 export function AppShell() {
   const { prefs, setPref } = usePreferences()
@@ -53,6 +54,7 @@ export function AppShell() {
           onToggleSidebar={() => setPref('sidebarCollapsed', !prefs.sidebarCollapsed)}
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
+        <DraftBanner />
         <main id="main-content">
           <Outlet />
         </main>

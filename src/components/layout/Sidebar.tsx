@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { Icon, type IconName } from '../ui/Icon'
 import { useData } from '../../store/DataProvider'
 import { useSession } from '../../store/session'
+import { content } from '../../content/loadContent'
 
 interface NavItem {
   to: string
@@ -51,10 +52,17 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
   return (
     <aside className="sidebar" data-open={open} aria-label="Main navigation">
       <div className="sidebar__brand">
-        <span className="sidebar__mark">AC</span>
+        <span className="sidebar__mark">
+          {content.site.name
+            .split(/\s+/)
+            .map((word) => word[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase()}
+        </span>
         <span className="sidebar__name">
-          <strong>Course Hub</strong>
-          <span>Faculty workspace</span>
+          <strong>{content.site.name}</strong>
+          <span>{content.site.tagline}</span>
         </span>
       </div>
 

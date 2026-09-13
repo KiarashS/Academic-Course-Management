@@ -4,18 +4,75 @@ A course management workspace for professors and teaching assistants. Courses ca
 materials, assignments, modules, announcements, and staff; everything is searchable across the
 department and organised by semester, category, and tag.
 
-Built with React 19, TypeScript, Vite, and React Router. There is no backend: the whole dataset
-lives in `localStorage` and ships with a populated demo department, so the app runs from `npm run
-dev` with nothing else to set up.
+Built with React 19, TypeScript, Vite, and React Router, and deployed as a static site to GitHub
+Pages. There is no backend and no database: every course, material, and deadline comes from one
+file, `content/courses.yaml`, and the files themselves sit in `public/courses/<course id>/`.
 
 ## Running it
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # type-check and emit to dist/
+npm run dev             # http://localhost:5173
+npm run build           # type-check and emit to dist/
+npm run preview         # serve the build at the deployed base path
+npm run check:content   # cross-check the YAML against the files on disk
 npm run lint
 ```
+
+## Adding a course
+
+Add an entry to `content/courses.yaml`, drop its files in
+`public/courses/<course id>/`, and reference them by filename:
+
+```yaml
+courses:
+  - id: operating-systems     # the URL and the folder name
+    code: CE-341
+    title: Operating Systems
+    semester: fall-2025
+    category: cs
+    status: archived          # a course you have finished
+    professors: [nasseri]
+    tags: [core, systems]
+    summary: Processes, scheduling, virtual memory, and concurrency.
+    materials:
+      - title: Lecture 1 — What an operating system actually does
+        file: lec01-intro.pdf     # public/courses/operating-systems/lec01-intro.pdf
+        week: 1
+      - title: "Operating Systems: Three Easy Pieces"
+        type: ebook
+        url: https://pages.cs.wisc.edu/~remzi/OSTEP/
+```
+
+File sizes and material icons are read from the files themselves, so they do not have to be
+maintained by hand. `content/README.md` documents every field. If an entry is wrong — an unknown
+semester id, a deadline before its release date — the site refuses to load and says which entry and
+why, instead of rendering a blank page.
+
+## Publishing to GitHub Pages
+
+```bash
+npm run deploy     # checks content, builds, pushes dist/ to the gh-pages branch
+```
+
+Then set Pages to serve from the `gh-pages` branch. The build writes `404.html` alongside
+`index.html` so deep links work, and `.nojekyll` so Jekyll leaves the output alone. The base path
+is `/Academic-Course-Management/`; override it with `BASE_PATH=/ npm run build` for a user site or
+custom domain.
+
+**Deploy from a machine that has the course files.** `public/courses/` is git-ignored, so the files
+never enter the repository — which also means a GitHub Actions workflow would check out a repo
+without them and publish dead links. `npm run deploy` builds locally, where the files are, and
+pushes only the built output. To commit the files instead, drop the `public/courses/*` lines from
+`.gitignore`.
+
+## Editing in the browser
+
+The forms still work, and they are the easiest way to draft a course. On a static site nothing the
+browser does can publish, so edits are kept as a local draft: a banner says so, and Settings →
+Publishing exports the whole workspace back out as `courses.yaml` to replace the file with. A draft
+is discarded automatically when the content file changes underneath it, so a published update is
+never silently shadowed by a stale local edit.
 
 ## What is in it
 
@@ -23,11 +80,12 @@ npm run lint
 capacity and enrolment, language, room, accent colour, meeting times, prerequisites, learning
 objectives, and a weighted grading scheme. A course is a draft, published, or archived. Professors
 create, edit, archive, restore, duplicate into another semester, and delete; duplicating copies the
-modules and materials and resets enrolment.
+modules and materials and resets enrolment. Courses you have finished go in with `status: archived`,
+which keeps their materials searchable while moving the course itself to the Archive page.
 
 **Materials.** Slides, e-books, notes, videos, papers, datasets, code, and external links, each with
-a URL, file size, week number, optional module, uploader, tags, a download counter, and a
-student-visible flag. The library page searches across every course at once and filters by type,
+a file or URL, size, week number, optional module, uploader, tags, a download counter, and a
+student-visible flag. A `file:` is served from the course's own folder; a `url:` points anywhere. The library page searches across every course at once and filters by type,
 course, tag, and uploader; a course's own tab groups them by module.
 
 **Assignments.** Homework, labs, quizzes, projects, and exams with release and due timestamps,
@@ -64,14 +122,20 @@ shortcuts (⌘K, `/`, Esc), toast notifications, and JSON export and import from
 ## Layout
 
 ```
+content/
+  courses.yaml     the site's content — courses, materials, assignments, people
+  README.md        every field, documented
+public/courses/    course files, git-ignored, published with the site
+scripts/
+  check-content.mjs  YAML ↔ files on disk
 src/
   components/
     assignments/   assignment row and form
     courses/       course card, table row, and form
-    layout/        app shell, sidebar, top bar, command palette, toasts
+    layout/        app shell, sidebar, top bar, command palette, toasts, draft banner
     materials/     material row and form
     ui/            button, badge, avatar, modal, fields, menu, tag picker, icons
-  data/seed.ts     the demo department, dated relative to today
+  content/         YAML → app data, with validation, and the export back out
   lib/             formatting, selectors, search, id generation, storage
   pages/           one file per route
   store/           data, preferences, toasts, session and permissions
@@ -84,13 +148,18 @@ holds the read side (filtering, stats, ranked search) as plain functions over th
 a record cleans up what referenced it: removing a course takes its materials, assignments, modules,
 and announcements with it, and removing a person unassigns them from every course.
 
-## Data
+## How the data flows
 
-Everything is stored under two `localStorage` keys, `acm.data.v1` and `acm.prefs.v1`, and nothing
-leaves the browser. Loading merges the stored collections over the seed, so a workspace saved by an
-older build still boots after new collections are added. Settings exports the whole dataset as JSON,
-imports one back, and resets to the sample department.
+`content/courses.yaml` is parsed at build time by a small Vite plugin, expanded into the app's data
+model by `src/content/loadContent.ts`, and validated there: unknown ids, bad weekdays, impossible
+dates, and missing required fields all fail with a message naming the entry. A second virtual module
+reports the real size of everything under `public/courses`, so sizes are read from the files rather
+than typed into the YAML.
 
-The demo data is anchored to the day it first loads — the current term opens twelve weeks earlier —
-so lecture material sits in the past, deadlines fall in the next few weeks, and the calendar is
-never empty.
+`localStorage` holds two things: preferences under `acm.prefs.v1`, and — only once you edit
+something — a draft under `acm.draft.v2`, stamped with a hash of the content file it branched from.
+When the hash stops matching, the draft is dropped and the published content loads instead. Nothing
+leaves the browser.
+
+The repository ships with a sample department in `courses.yaml`. Replace those entries with your
+own; it is one file.

@@ -1,5 +1,4 @@
-import { useRef, useState } from 'react'
-import type { AppData } from '../types'
+import { useState } from 'react'
 import { useData } from '../store/DataProvider'
 import { usePreferences } from '../store/PreferencesProvider'
 import { useSession } from '../store/session'
@@ -9,6 +8,9 @@ import { Icon } from '../components/ui/Icon'
 import { Avatar } from '../components/ui/Avatar'
 import { Badge } from '../components/ui/Badge'
 import { ConfirmDialog } from '../components/ui/Modal'
+import { exportYaml } from '../content/exportYaml'
+import { content } from '../content/loadContent'
+import { formatDate } from '../lib/format'
 
 const COLLECTIONS = [
   'people',
@@ -28,32 +30,39 @@ export function Settings() {
   const { prefs, setPref } = usePreferences()
   const { user } = useSession()
   const { notify } = useToast()
-  const fileInput = useRef<HTMLInputElement>(null)
-  const [confirmReset, setConfirmReset] = useState(false)
+  const [confirmRevert, setConfirmRevert] = useState(false)
+  const [busy, setBusy] = useState(false)
 
-  const exportData = () => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
+  const download = (text: string, filename: string, type: string) => {
+    const url = URL.createObjectURL(new Blob([text], { type }))
     const anchor = document.createElement('a')
     anchor.href = url
-    anchor.download = `course-hub-${new Date().toISOString().slice(0, 10)}.json`
+    anchor.download = filename
     anchor.click()
     URL.revokeObjectURL(url)
-    notify('Workspace exported as JSON.')
   }
 
-  const importData = async (file: File) => {
+  const downloadYaml = async () => {
+    setBusy(true)
     try {
-      const parsed = JSON.parse(await file.text()) as Partial<AppData>
-      const missing = COLLECTIONS.filter((key) => !Array.isArray(parsed[key]))
-      if (missing.length > 0) {
-        notify(`That file is missing: ${missing.join(', ')}.`, 'error')
-        return
-      }
-      store.replaceData(parsed as AppData)
-      notify('Workspace replaced from file.')
+      download(await exportYaml(data), 'courses.yaml', 'text/yaml')
+      notify('Downloaded courses.yaml — replace content/courses.yaml with it and redeploy.')
+    } catch (error) {
+      notify(`Could not build the YAML: ${(error as Error).message}`, 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const copyYaml = async () => {
+    setBusy(true)
+    try {
+      await navigator.clipboard.writeText(await exportYaml(data))
+      notify('Content file copied to the clipboard.')
     } catch {
-      notify('That file is not valid JSON.', 'error')
+      notify('The browser blocked clipboard access. Use Download instead.', 'error')
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -66,8 +75,8 @@ export function Settings() {
           <p className="page-header__eyebrow">Preferences</p>
           <h1>Settings</h1>
           <p>
-            Appearance, the account you are viewing as, and what happens to the data this workspace
-            keeps in your browser.
+            Appearance, the account you are viewing as, and how edits made here get back into the
+            content file the site is built from.
           </p>
         </div>
       </header>
@@ -162,57 +171,113 @@ export function Settings() {
           <div className="card">
             <div className="card__header">
               <div>
-                <h3>Data</h3>
-                <p>Everything lives in this browser's local storage. Nothing is sent anywhere.</p>
+                <h3>Publishing</h3>
+                <p>
+                  The site is built from <code>content/courses.yaml</code>. Anything you change in
+                  the browser is a local draft until it goes back into that file.
+                </p>
               </div>
             </div>
             <div className="card__body stack">
               <div className="setting-row">
                 <div>
-                  <strong>Export workspace</strong>
-                  <p className="muted-text">Download every record as a single JSON file.</p>
+                  <strong>Status</strong>
+                  <p className="muted-text">
+                    {store.isDraft
+                      ? `This browser holds unpublished edits${
+                          store.draftSavedAt ? `, last saved ${formatDate(store.draftSavedAt, true)}` : ''
+                        }. Nobody else can see them.`
+                      : 'You are seeing exactly what the content file publishes.'}
+                  </p>
                 </div>
-                <Button icon="download" onClick={exportData}>
-                  Export JSON
+                <Badge tone={store.isDraft ? 'warning' : 'success'} dot>
+                  {store.isDraft ? 'Local draft' : 'Published'}
+                </Badge>
+              </div>
+
+              <div className="setting-row">
+                <div>
+                  <strong>Export the content file</strong>
+                  <p className="muted-text">
+                    Writes the whole workspace back out as YAML. Replace
+                    <code> content/courses.yaml</code> with it, commit, and redeploy.
+                  </p>
+                </div>
+                <div className="row" style={{ gap: 'var(--space-2)' }}>
+                  <Button icon="copy" disabled={busy} onClick={copyYaml}>
+                    Copy
+                  </Button>
+                  <Button variant="primary" icon="download" disabled={busy} onClick={downloadYaml}>
+                    Download YAML
+                  </Button>
+                </div>
+              </div>
+
+              <div className="setting-row">
+                <div>
+                  <strong>Discard local changes</strong>
+                  <p className="muted-text">
+                    Drops the draft and reloads the published content file.
+                  </p>
+                </div>
+                <Button variant="danger" icon="restore" disabled={!store.isDraft} onClick={() => setConfirmRevert(true)}>
+                  Discard
                 </Button>
               </div>
 
               <div className="setting-row">
                 <div>
-                  <strong>Import workspace</strong>
-                  <p className="muted-text">Replaces the current data with the contents of a file.</p>
-                </div>
-                <>
-                  <input
-                    ref={fileInput}
-                    type="file"
-                    accept="application/json"
-                    className="visually-hidden"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0]
-                      if (file) void importData(file)
-                      event.target.value = ''
-                    }}
-                  />
-                  <Button icon="upload" onClick={() => fileInput.current?.click()}>
-                    Choose file
-                  </Button>
-                </>
-              </div>
-
-              <div className="setting-row">
-                <div>
-                  <strong>Reset to sample data</strong>
+                  <strong>Raw snapshot</strong>
                   <p className="muted-text">
-                    Discards your changes and reloads the demo department.
+                    The in-memory dataset as JSON. Useful for debugging, not for publishing.
                   </p>
                 </div>
-                <Button variant="danger" icon="restore" onClick={() => setConfirmReset(true)}>
-                  Reset
+                <Button
+                  icon="download"
+                  onClick={() => {
+                    download(
+                      JSON.stringify(data, null, 2),
+                      `course-hub-${new Date().toISOString().slice(0, 10)}.json`,
+                      'application/json',
+                    )
+                    notify('Snapshot downloaded.')
+                  }}
+                >
+                  Export JSON
                 </Button>
               </div>
             </div>
           </div>
+
+          {content.missingFiles.length > 0 && (
+            <div className="card">
+              <div className="card__header">
+                <div>
+                  <h3>Missing files</h3>
+                  <p>
+                    Referenced by the content file but not present under
+                    <code> public/courses/</code>. These links will 404 once deployed.
+                  </p>
+                </div>
+                <Badge tone="warning">{content.missingFiles.length}</Badge>
+              </div>
+              <div className="card__body">
+                <ul className="count-list">
+                  {content.missingFiles.slice(0, 12).map((file) => (
+                    <li key={file}>
+                      <code style={{ textTransform: 'none' }}>{file}</code>
+                    </li>
+                  ))}
+                </ul>
+                {content.missingFiles.length > 12 && (
+                  <p className="muted-text">
+                    …and {content.missingFiles.length - 12} more. Run{' '}
+                    <code>npm run check:content</code> for the full list.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="stack">
@@ -302,15 +367,15 @@ export function Settings() {
       </section>
 
       <ConfirmDialog
-        open={confirmReset}
-        title="Reset to sample data?"
-        message="Every course, material, assignment, and person you added or edited is discarded. Export first if you want a copy."
-        confirmLabel="Reset workspace"
+        open={confirmRevert}
+        title="Discard local changes?"
+        message="Every edit you made in this browser is thrown away and the published content file is reloaded. Export the YAML first if you want to keep the changes."
+        confirmLabel="Discard draft"
         onConfirm={() => {
-          store.resetDemoData()
-          notify('Workspace reset to the sample department.', 'info')
+          store.revertToPublished()
+          notify('Back to the published content file.', 'info')
         }}
-        onClose={() => setConfirmReset(false)}
+        onClose={() => setConfirmRevert(false)}
       />
     </div>
   )

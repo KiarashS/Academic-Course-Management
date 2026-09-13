@@ -19,7 +19,7 @@ import type {
   Semester,
   Tag,
 } from '../types'
-import { freshData, loadData, resetStorage, saveData } from '../lib/storage'
+import { discardDraft, loadData, publishedData, saveData } from '../lib/storage'
 import { createId } from '../lib/id'
 
 type Draft<T extends { id: string }> = Omit<T, 'id' | 'createdAt' | 'updatedAt'> &
@@ -67,7 +67,12 @@ interface DataContextValue {
   deletePerson: (id: string) => void
   /* Whole-dataset operations */
   replaceData: (next: AppData) => void
-  resetDemoData: () => void
+  /** Throws away local edits and returns to what content/courses.yaml publishes. */
+  revertToPublished: () => void
+  /** True while the browser is showing edits that are not in the content file. */
+  isDraft: boolean
+  /** When those edits were last written to this browser. */
+  draftSavedAt?: string
 }
 
 const DataContext = createContext<DataContextValue | null>(null)
@@ -75,31 +80,47 @@ const DataContext = createContext<DataContextValue | null>(null)
 const now = () => new Date().toISOString()
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<AppData>(() => loadData())
+  const [loaded] = useState(() => loadData())
+  const [data, setData] = useState<AppData>(loaded.data)
+  const [isDraft, setIsDraft] = useState(loaded.isDraft)
+  const [draftSavedAt, setDraftSavedAt] = useState(loaded.savedAt)
+  // The first render is the published content; only real edits create a draft.
+  const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
-    saveData(data)
-  }, [data])
+    if (dirty) saveData(data)
+  }, [data, dirty])
+
+  /** Every mutation goes through here so drafts are tracked in one place. */
+  const edit = useCallback((update: (prev: AppData) => AppData) => {
+    setDirty(true)
+    setIsDraft(true)
+    setDraftSavedAt(new Date().toISOString())
+    setData(update)
+  }, [])
 
   /** Generic list updater: replaces one record inside one collection. */
   const patchIn = useCallback(
     <K extends keyof AppData>(key: K, id: string, patch: object, stamp = true) => {
-      setData((prev) => ({
+      edit((prev) => ({
         ...prev,
         [key]: (prev[key] as { id: string }[]).map((item) =>
           item.id === id ? { ...item, ...patch, ...(stamp ? { updatedAt: now() } : {}) } : item,
         ),
       }))
     },
-    [],
+    [edit],
   )
 
-  const removeFrom = useCallback(<K extends keyof AppData>(key: K, id: string) => {
-    setData((prev) => ({
-      ...prev,
-      [key]: (prev[key] as { id: string }[]).filter((item) => item.id !== id),
-    }))
-  }, [])
+  const removeFrom = useCallback(
+    <K extends keyof AppData>(key: K, id: string) => {
+      edit((prev) => ({
+        ...prev,
+        [key]: (prev[key] as { id: string }[]).filter((item) => item.id !== id),
+      }))
+    },
+    [edit],
+  )
 
   const value = useMemo<DataContextValue>(() => {
     return {
@@ -112,12 +133,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
           createdAt: now(),
           updatedAt: now(),
         }
-        setData((prev) => ({ ...prev, courses: [course, ...prev.courses] }))
+        edit((prev) => ({ ...prev, courses: [course, ...prev.courses] }))
         return course
       },
       updateCourse: (id, patch) => patchIn('courses', id, patch),
       deleteCourse: (id) =>
-        setData((prev) => ({
+        edit((prev) => ({
           ...prev,
           courses: prev.courses.filter((c) => c.id !== id),
           materials: prev.materials.filter((m) => m.courseId !== id),
@@ -163,7 +184,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             createdAt: now(),
             updatedAt: now(),
           }))
-        setData((prev) => ({
+        edit((prev) => ({
           ...prev,
           courses: [copy, ...prev.courses],
           modules: [...prev.modules, ...modules],
@@ -179,13 +200,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
           createdAt: now(),
           updatedAt: now(),
         }
-        setData((prev) => ({ ...prev, materials: [material, ...prev.materials] }))
+        edit((prev) => ({ ...prev, materials: [material, ...prev.materials] }))
         return material
       },
       updateMaterial: (id, patch) => patchIn('materials', id, patch),
       deleteMaterial: (id) => removeFrom('materials', id),
       registerDownload: (id) =>
-        setData((prev) => ({
+        edit((prev) => ({
           ...prev,
           materials: prev.materials.map((m) =>
             m.id === id ? { ...m, downloads: m.downloads + 1 } : m,
@@ -199,7 +220,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           createdAt: now(),
           updatedAt: now(),
         }
-        setData((prev) => ({ ...prev, assignments: [assignment, ...prev.assignments] }))
+        edit((prev) => ({ ...prev, assignments: [assignment, ...prev.assignments] }))
         return assignment
       },
       updateAssignment: (id, patch) => patchIn('assignments', id, patch),
@@ -207,12 +228,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       addModule: (draft) => {
         const module: Module = { ...draft, id: createId('mod') }
-        setData((prev) => ({ ...prev, modules: [...prev.modules, module] }))
+        edit((prev) => ({ ...prev, modules: [...prev.modules, module] }))
         return module
       },
       updateModule: (id, patch) => patchIn('modules', id, patch, false),
       deleteModule: (id) =>
-        setData((prev) => ({
+        edit((prev) => ({
           ...prev,
           modules: prev.modules.filter((m) => m.id !== id),
           materials: prev.materials.map((m) =>
@@ -222,7 +243,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       addAnnouncement: (draft) => {
         const announcement: Announcement = { ...draft, id: createId('an'), createdAt: now() }
-        setData((prev) => ({ ...prev, announcements: [announcement, ...prev.announcements] }))
+        edit((prev) => ({ ...prev, announcements: [announcement, ...prev.announcements] }))
         return announcement
       },
       updateAnnouncement: (id, patch) => patchIn('announcements', id, patch, false),
@@ -232,12 +253,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const existing = data.tags.find((t) => t.name.toLowerCase() === name.toLowerCase())
         if (existing) return existing
         const tag: Tag = { id: createId('tag'), name, color }
-        setData((prev) => ({ ...prev, tags: [...prev.tags, tag] }))
+        edit((prev) => ({ ...prev, tags: [...prev.tags, tag] }))
         return tag
       },
       updateTag: (id, patch) => patchIn('tags', id, patch, false),
       deleteTag: (id) =>
-        setData((prev) => ({
+        edit((prev) => ({
           ...prev,
           tags: prev.tags.filter((t) => t.id !== id),
           courses: prev.courses.map((c) => ({ ...c, tagIds: c.tagIds.filter((t) => t !== id) })),
@@ -253,7 +274,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       addCategory: (draft) => {
         const category: Category = { ...draft, id: createId('cat') }
-        setData((prev) => ({ ...prev, categories: [...prev.categories, category] }))
+        edit((prev) => ({ ...prev, categories: [...prev.categories, category] }))
         return category
       },
       updateCategory: (id, patch) => patchIn('categories', id, patch, false),
@@ -261,25 +282,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       addSemester: (draft) => {
         const semester: Semester = { ...draft, id: createId('sem') }
-        setData((prev) => ({ ...prev, semesters: [semester, ...prev.semesters] }))
+        edit((prev) => ({ ...prev, semesters: [semester, ...prev.semesters] }))
         return semester
       },
       updateSemester: (id, patch) => patchIn('semesters', id, patch, false),
       deleteSemester: (id) => removeFrom('semesters', id),
       setCurrentSemester: (id) =>
-        setData((prev) => ({
+        edit((prev) => ({
           ...prev,
           semesters: prev.semesters.map((s) => ({ ...s, current: s.id === id })),
         })),
 
       addPerson: (draft) => {
         const person: Person = { ...draft, id: createId('u') }
-        setData((prev) => ({ ...prev, people: [...prev.people, person] }))
+        edit((prev) => ({ ...prev, people: [...prev.people, person] }))
         return person
       },
       updatePerson: (id, patch) => patchIn('people', id, patch, false),
       deletePerson: (id) =>
-        setData((prev) => ({
+        edit((prev) => ({
           ...prev,
           people: prev.people.filter((p) => p.id !== id),
           courses: prev.courses.map((c) => ({
@@ -289,13 +310,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
           })),
         })),
 
-      replaceData: (next) => setData(next),
-      resetDemoData: () => {
-        resetStorage()
-        setData(freshData())
+      replaceData: (next) => edit(() => next),
+      revertToPublished: () => {
+        discardDraft()
+        setDirty(false)
+        setIsDraft(false)
+        setDraftSavedAt(undefined)
+        setData(publishedData())
       },
+      isDraft,
+      draftSavedAt,
     }
-  }, [data, patchIn, removeFrom])
+  }, [data, patchIn, removeFrom, edit, isDraft, draftSavedAt])
 
   return <DataContext value={value}>{children}</DataContext>
 }

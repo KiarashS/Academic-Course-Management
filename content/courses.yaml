@@ -1,0 +1,1024 @@
+# ---------------------------------------------------------------------------
+# Course Hub content
+#
+# This file is the site's source of truth. Edit it, rebuild, redeploy.
+# Nothing you change in the browser is published — the browser only keeps a
+# local draft, which Settings can export back into this format.
+#
+# Files live in  public/courses/<course id>/  and are referenced with `file:`.
+# That folder is git-ignored, so run `npm run deploy` from a machine that has
+# the files. See content/README.md for the full field reference.
+# ---------------------------------------------------------------------------
+
+site:
+  name: Course Hub
+  tagline: Faculty workspace
+
+semesters:
+  - id: fall-2026
+    term: Fall
+    year: 2026
+    start: 2026-09-07
+    end: 2026-12-18
+    current: true
+  - id: spring-2026
+    term: Spring
+    year: 2026
+    start: 2026-02-02
+    end: 2026-06-12
+  - id: fall-2025
+    term: Fall
+    year: 2025
+    start: 2025-09-08
+    end: 2026-01-16
+  - id: summer-2025
+    term: Summer
+    year: 2025
+    start: 2025-06-23
+    end: 2025-08-15
+
+categories:
+  - { id: cs, name: Computer Science, color: "#6366f1", description: Systems, algorithms, and software engineering. }
+  - { id: math, name: Mathematics, color: "#0ea5e9", description: Pure and applied mathematics. }
+  - { id: data, name: Data Science, color: "#10b981", description: Statistics, machine learning, and data engineering. }
+  - { id: ee, name: Electrical Engineering, color: "#f59e0b", description: Signals, circuits, and embedded systems. }
+  - { id: seminar, name: Seminar, color: "#a855f7", description: Reading groups and research seminars. }
+
+tags:
+  - { id: core, name: core, color: "#6366f1" }
+  - { id: elective, name: elective, color: "#8b5cf6" }
+  - { id: lab, name: lab, color: "#f59e0b" }
+  - { id: python, name: python, color: "#0ea5e9" }
+  - { id: c-programming, name: c-programming, color: "#64748b" }
+  - { id: theory, name: theory, color: "#ec4899" }
+  - { id: machine-learning, name: machine-learning, color: "#10b981" }
+  - { id: systems, name: systems, color: "#f43f5e" }
+  - { id: project-based, name: project-based, color: "#14b8a6" }
+  - { id: exam-prep, name: exam-prep, color: "#eab308" }
+
+people:
+  - id: nasseri
+    name: Dr. Leila Nasseri
+    email: l.nasseri@university.edu
+    role: professor
+    title: Associate Professor of Computer Engineering
+    department: Computer Engineering
+    office: Engineering Hall 412
+    officeHours: Mon & Wed 14:00–16:00
+    phone: +1 (555) 014-2231
+    website: https://university.edu/~nasseri
+    color: "#6366f1"
+    bio: >-
+      Works on distributed systems and consensus protocols. Runs the Systems
+      Reading Group on Fridays.
+  - id: okonkwo
+    name: Prof. Daniel Okonkwo
+    email: d.okonkwo@university.edu
+    role: professor
+    title: Professor of Mathematics
+    department: Mathematics
+    office: Science Building 208
+    officeHours: Tue 10:00–12:00
+    color: "#0ea5e9"
+    bio: Numerical linear algebra, with a long detour through optimisation for machine learning.
+  - id: varga
+    name: Dr. Anna Varga
+    email: a.varga@university.edu
+    role: professor
+    title: Assistant Professor of Data Science
+    department: Computer Engineering
+    office: Engineering Hall 305
+    officeHours: Thu 09:00–11:00
+    color: "#10b981"
+    bio: Statistical learning, causal inference, and far too many Jupyter notebooks.
+  - id: ibrahim
+    name: Dr. Samir Ibrahim
+    email: s.ibrahim@university.edu
+    role: professor
+    title: Professor of Electrical Engineering
+    department: Electrical Engineering
+    office: Tesla Lab 120
+    officeHours: Wed 13:00–15:00
+    color: "#f59e0b"
+  - id: mehta
+    name: Riya Mehta
+    email: r.mehta@university.edu
+    role: ta
+    title: Teaching Assistant · PhD candidate
+    department: Computer Engineering
+    office: Engineering Hall 118
+    officeHours: Fri 15:00–17:00
+    color: "#ec4899"
+    bio: Third-year PhD student. Maintains the autograder and the lab VMs.
+  - id: lund
+    name: Erik Lund
+    email: e.lund@university.edu
+    role: ta
+    title: Teaching Assistant · MSc
+    department: Mathematics
+    officeHours: Tue 16:00–18:00
+    color: "#8b5cf6"
+  - id: chen
+    name: Wei Chen
+    email: w.chen@university.edu
+    role: ta
+    title: Teaching Assistant · PhD candidate
+    department: Computer Engineering
+    officeHours: Mon 11:00–13:00
+    color: "#14b8a6"
+  - id: diallo
+    name: Aminata Diallo
+    email: a.diallo@university.edu
+    role: ta
+    title: Teaching Assistant · MSc
+    department: Electrical Engineering
+    officeHours: Thu 14:00–16:00
+    color: "#f43f5e"
+  - id: koch
+    name: Jonas Koch
+    email: j.koch@student.university.edu
+    role: student
+    department: Computer Engineering
+    color: "#64748b"
+
+courses:
+  # -------------------------------------------------------------------------
+  # The course `id` doubles as its URL and as its folder under public/courses,
+  # so files for this course belong in public/courses/operating-systems/.
+  # -------------------------------------------------------------------------
+  - id: operating-systems
+    code: CE-341
+    title: Operating Systems
+    semester: fall-2026
+    category: cs
+    status: published
+    level: undergraduate
+    credits: 4
+    capacity: 90
+    enrolled: 84
+    color: "#6366f1"
+    location: Engineering Hall, Room 201
+    professors: [nasseri]
+    assistants: [mehta, chen]
+    tags: [core, systems, c-programming, lab]
+    summary: >-
+      Processes, scheduling, virtual memory, file systems, and concurrency,
+      built around a semester-long kernel project.
+    description: >-
+      A hands-on treatment of how an operating system works, from the boot
+      sequence to the page fault handler. Lectures follow the classic topics;
+      the lab track has you extend a teaching kernel written in C until it can
+      run a preemptive scheduler, a copy-on-write fork, and a journaling file
+      system. Weekly labs are graded by an autograder with three free late days
+      for the semester.
+    prerequisites:
+      - CE-201 Computer Architecture
+      - CE-210 Data Structures
+    objectives:
+      - Explain how the kernel isolates processes and multiplexes the CPU.
+      - Implement a preemptive scheduler and measure its fairness.
+      - Reason about race conditions and prove a locking scheme correct.
+      - Build a crash-consistent file system layer.
+    schedule:
+      - { day: Mon, start: "10:00", end: "11:30", room: EH 201 }
+      - { day: Wed, start: "10:00", end: "11:30", room: EH 201 }
+      - { day: Fri, start: "14:00", end: "16:00", room: EH Lab B }
+    grading:
+      - { label: Labs, weight: 40 }
+      - { label: Homework, weight: 15 }
+      - { label: Midterm, weight: 20 }
+      - { label: Final exam, weight: 25 }
+    modules:
+      - { id: processes, title: Processes and the kernel boundary, summary: System calls, traps, and the process abstraction. }
+      - { id: scheduling, title: Scheduling, summary: Round robin through CFS, and how to measure fairness. }
+      - { id: memory, title: Virtual memory, summary: Paging, TLBs, copy-on-write, and page replacement. }
+      - { id: concurrency, title: Concurrency, summary: Locks, condition variables, and deadlock. }
+      - { id: filesystems, title: File systems, summary: Inodes, journaling, and crash consistency. }
+    materials:
+      - title: Lecture 1 — What an operating system actually does
+        type: slides
+        file: lec01-intro.pdf
+        module: processes
+        week: 1
+        author: nasseri
+        tags: [systems]
+        added: 2026-09-07
+        downloads: 312
+        description: Course logistics, the kernel/user boundary, and a tour of the teaching kernel.
+      - title: "Operating Systems: Three Easy Pieces"
+        type: ebook
+        url: https://pages.cs.wisc.edu/~remzi/OSTEP/
+        author: nasseri
+        tags: [core]
+        added: 2026-09-07
+        downloads: 596
+        description: Primary textbook. Free online; chapter numbers in the syllabus refer to this edition.
+      - title: Lab 0 setup guide — toolchain and QEMU
+        type: note
+        file: lab0-setup.md
+        module: processes
+        week: 1
+        author: mehta
+        tags: [lab, c-programming]
+        added: 2026-09-08
+        downloads: 288
+        description: Cross-compiler, QEMU, and the grading harness, on Linux and macOS.
+      - title: Lecture 4 — CPU scheduling
+        type: slides
+        file: lec04-scheduling.pdf
+        module: scheduling
+        week: 3
+        author: nasseri
+        tags: [systems]
+        added: 2026-09-21
+        downloads: 241
+      - title: Scheduler simulator (Python)
+        type: code
+        url: https://git.university.edu/ce341/sched-sim
+        module: scheduling
+        week: 3
+        author: chen
+        tags: [python, lab]
+        added: 2026-09-22
+        downloads: 176
+        description: Plots turnaround and response time for FIFO, SJF, RR, and MLFQ.
+      - title: Lecture 7 — Paging and the TLB
+        type: slides
+        file: lec07-paging.pdf
+        module: memory
+        week: 5
+        author: nasseri
+        tags: [systems]
+        added: 2026-10-05
+        downloads: 198
+      - title: Recitation recording — page fault walkthrough
+        type: video
+        url: https://media.university.edu/ce341/rec-pagefault
+        module: memory
+        week: 5
+        author: chen
+        tags: [systems]
+        added: 2026-10-07
+        downloads: 134
+        description: 52 minutes. Single-steps a fault from the trap frame to the physical frame allocator.
+      - title: Deadlock detection worksheet
+        type: note
+        file: deadlock-worksheet.pdf
+        module: concurrency
+        week: 8
+        author: mehta
+        tags: [exam-prep]
+        added: 2026-10-26
+        visible: false
+        description: Draft — release with the midterm review session.
+    assignments:
+      - title: Lab 1 — System calls
+        type: lab
+        released: 2026-09-08
+        due: 2026-09-19 23:59
+        points: 100
+        weight: 10
+        author: mehta
+        tags: [lab, c-programming]
+        submissions: 84
+        graded: 84
+        description: Add three system calls to the teaching kernel and write the user-space tests for them.
+      - title: Lab 2 — Preemptive scheduler
+        type: lab
+        released: 2026-09-21
+        due: 2026-10-03 23:59
+        points: 100
+        weight: 10
+        author: mehta
+        tags: [lab, c-programming]
+        attachment: lab2.pdf
+        submissions: 61
+        graded: 12
+        description: >-
+          Replace the cooperative scheduler with a preemptive round-robin one
+          driven by the timer interrupt, then measure response time under the
+          provided workload mix. Submit the kernel patch and a one-page write-up.
+      - title: Homework 3 — Virtual memory
+        type: homework
+        released: 2026-10-05
+        due: 2026-10-17 23:59
+        points: 60
+        weight: 5
+        author: nasseri
+        tags: [systems]
+        allowLate: false
+        submissions: 8
+        description: >-
+          Six problems on page table walks, TLB reach, and page replacement.
+          Problem 5 asks you to compute the working set from a supplied trace.
+      - title: Midterm exam
+        type: exam
+        released: 2026-10-12
+        due: 2026-10-28 12:00
+        points: 200
+        weight: 20
+        author: nasseri
+        tags: [exam-prep]
+        allowLate: false
+        description: >-
+          Covers modules 1–3. Closed book, one double-sided sheet of notes
+          allowed. Two hours, Engineering Hall 201.
+      - title: Lab 3 — Copy-on-write fork
+        type: lab
+        released: 2026-10-19
+        due: 2026-11-06 23:59
+        points: 100
+        weight: 10
+        author: chen
+        tags: [lab, c-programming]
+        published: false
+        description: >-
+          Make fork() lazy. Share physical pages until first write, then split on
+          the fault. The test suite checks both correctness and that you actually
+          saved the copies.
+    announcements:
+      - title: Lab 2 deadline extended by 48 hours
+        author: nasseri
+        date: 2026-09-11 09:15
+        pinned: true
+        body: >-
+          The autograder queue backed up on Tuesday night and several of you lost
+          submission attempts through no fault of your own. Lab 2 now closes
+          Thursday at 23:59. Late days are not consumed by the extension.
+      - title: Extra office hours before the midterm
+        author: mehta
+        date: 2026-09-08 16:40
+        body: >-
+          Wei and I will hold an additional session on Saturday 10:00–13:00 in
+          EH 118. Bring questions on paging; that is where the practice exam
+          separated people last year.
+
+  - id: distributed-systems
+    code: CE-521
+    title: Distributed Systems
+    semester: fall-2026
+    category: cs
+    status: published
+    level: graduate
+    credits: 3
+    capacity: 35
+    enrolled: 31
+    color: "#f43f5e"
+    location: Engineering Hall, Room 410
+    professors: [nasseri]
+    assistants: [chen]
+    tags: [systems, theory, project-based]
+    summary: Consensus, replication, and the failure modes that make distributed computing hard.
+    description: >-
+      A graduate course organised around reading and reproducing systems papers.
+      We work through logical clocks, Paxos and Raft, linearizability, CRDTs, and
+      the practical consistency models shipped by production databases. Each
+      student reproduces one result from a paper of their choosing and presents
+      it in the last three weeks.
+    prerequisites:
+      - CE-341 Operating Systems
+      - Comfort with Go or Rust
+    objectives:
+      - Compare consensus protocols by their failure assumptions.
+      - Test a replicated service under partition and clock skew.
+      - Read a systems paper critically and reproduce its core claim.
+    schedule:
+      - { day: Tue, start: "13:00", end: "15:00", room: EH 410 }
+      - { day: Thu, start: "13:00", end: "15:00", room: EH 410 }
+    grading:
+      - { label: Paper reviews, weight: 20 }
+      - { label: Lab assignments, weight: 35 }
+      - { label: Reproduction project, weight: 35 }
+      - { label: Participation, weight: 10 }
+    modules:
+      - { id: time, title: Time and ordering }
+      - { id: consensus, title: Consensus }
+      - { id: replication, title: Replication and consistency }
+    materials:
+      - title: Time, Clocks, and the Ordering of Events (Lamport, 1978)
+        type: paper
+        url: https://lamport.azurewebsites.net/pubs/time-clocks.pdf
+        module: time
+        week: 1
+        author: nasseri
+        tags: [theory]
+        added: 2026-09-08
+        downloads: 142
+        description: Week 1 reading. Review due Thursday.
+      - title: In Search of an Understandable Consensus Algorithm (Raft)
+        type: paper
+        url: https://raft.github.io/raft.pdf
+        module: consensus
+        week: 4
+        author: nasseri
+        tags: [theory, systems]
+        added: 2026-09-29
+        downloads: 137
+      - title: Raft lab skeleton (Go)
+        type: code
+        url: https://git.university.edu/ce521/raft-lab
+        module: consensus
+        week: 4
+        author: chen
+        tags: [lab, project-based]
+        added: 2026-09-30
+        downloads: 119
+        description: Tests run under -race. Start from the leader election test only.
+      - title: Lecture 9 — Consistency models, ranked
+        type: slides
+        file: lec09-consistency.pdf
+        module: replication
+        week: 7
+        author: nasseri
+        tags: [theory]
+        added: 2026-10-20
+        downloads: 96
+    assignments:
+      - title: Paper review — Raft
+        type: homework
+        released: 2026-09-08
+        due: 2026-09-17 17:00
+        points: 20
+        weight: 4
+        author: nasseri
+        tags: [theory]
+        allowLate: false
+        submissions: 24
+        graded: 24
+        description: >-
+          One page. State the paper's main claim, the assumption you find least
+          defensible, and one experiment that would test it.
+      - title: Lab 2 — Leader election
+        type: lab
+        released: 2026-09-10
+        due: 2026-09-23 23:59
+        points: 100
+        weight: 15
+        author: chen
+        tags: [lab, project-based]
+        submissions: 19
+        graded: 3
+        description: >-
+          Implement leader election and heartbeats from the Raft skeleton. Your
+          implementation must pass the election tests under -race and survive a
+          partition of the leader.
+      - title: Reproduction project — proposal
+        type: project
+        released: 2026-09-14
+        due: 2026-10-01 17:00
+        points: 50
+        weight: 10
+        author: nasseri
+        tags: [project-based]
+        allowLate: false
+        submissions: 2
+        description: >-
+          Two pages: the paper, the claim you will reproduce, the hardware you
+          need, and what a negative result would look like.
+    announcements:
+      - title: "Project proposals: pick your paper by Friday"
+        author: nasseri
+        date: 2026-09-10 11:00
+        pinned: true
+        body: >-
+          Add your name and paper to the shared sheet before Friday so we do not
+          end up with six reproductions of the same benchmark. If you want to
+          reproduce something not on the list, email me first.
+
+  - id: linear-algebra
+    code: MATH-214
+    title: Linear Algebra and Its Applications
+    semester: fall-2026
+    category: math
+    status: published
+    level: undergraduate
+    credits: 4
+    capacity: 140
+    enrolled: 137
+    color: "#0ea5e9"
+    location: Science Building, Lecture Hall A
+    professors: [okonkwo]
+    assistants: [lund]
+    tags: [core, theory, python]
+    summary: Vector spaces, eigenvalues, and matrix factorisations, with a computational track in NumPy.
+    description: >-
+      The standard second-year linear algebra course with an applied slant.
+      Proofs are expected, but every major theorem is paired with a computation:
+      least squares on real measurement data, PageRank on a crawled subgraph, and
+      image compression with the SVD. Weekly problem sets alternate between
+      written proofs and short notebooks.
+    prerequisites: [MATH-101 Calculus I]
+    objectives:
+      - Decide when a linear system has zero, one, or infinitely many solutions.
+      - Diagonalise a matrix and interpret its eigenvalues.
+      - Apply the SVD to a least-squares and a compression problem.
+    schedule:
+      - { day: Mon, start: "08:30", end: "10:00", room: SB-A }
+      - { day: Wed, start: "08:30", end: "10:00", room: SB-A }
+    grading:
+      - { label: Problem sets, weight: 30 }
+      - { label: Midterm, weight: 30 }
+      - { label: Final exam, weight: 40 }
+    modules:
+      - { id: spaces, title: Vector spaces }
+      - { id: eigen, title: Eigenvalues and diagonalisation }
+      - { id: svd, title: Orthogonality and the SVD }
+    materials:
+      - title: Lecture notes 1–4 — Vector spaces and bases
+        type: note
+        file: notes-01-04.pdf
+        module: spaces
+        week: 1
+        author: okonkwo
+        tags: [theory]
+        added: 2026-09-07
+        downloads: 508
+      - title: Introduction to Linear Algebra — course reader
+        type: ebook
+        file: reader.pdf
+        author: okonkwo
+        tags: [core]
+        added: 2026-09-07
+        downloads: 721
+        description: Selected chapters, cleared by the library for course use.
+      - title: Eigenvalue drill set with solutions
+        type: note
+        file: eigen-drills.pdf
+        module: eigen
+        week: 6
+        author: lund
+        tags: [exam-prep]
+        added: 2026-10-12
+        downloads: 445
+      - title: SVD image compression notebook
+        type: code
+        url: https://git.university.edu/math214/svd-notebook
+        module: svd
+        week: 10
+        author: lund
+        tags: [python]
+        added: 2026-11-09
+        downloads: 233
+        description: Rank-k reconstruction of a 4K photograph, with error curves.
+    assignments:
+      - title: Problem set 5 — Determinants
+        type: homework
+        released: 2026-09-07
+        due: 2026-09-18 23:59
+        points: 40
+        weight: 4
+        author: lund
+        tags: [theory]
+        submissions: 134
+        graded: 134
+        description: >-
+          Cofactor expansion, the effect of row operations, and one proof that
+          the determinant is multiplicative.
+      - title: Problem set 6 — Eigenvalues
+        type: homework
+        released: 2026-09-21
+        due: 2026-10-02 23:59
+        points: 40
+        weight: 4
+        author: lund
+        tags: [theory, python]
+        submissions: 112
+        graded: 40
+        description: >-
+          Eight problems. Problems 1–5 are written proofs; 6–8 are a short
+          notebook computing eigenvalues of a Markov chain transition matrix.
+      - title: Midterm exam
+        type: exam
+        released: 2026-10-05
+        due: 2026-10-21 08:30
+        points: 150
+        weight: 30
+        author: okonkwo
+        tags: [exam-prep]
+        allowLate: false
+        description: Chapters 1–4. Calculators permitted, no notes. Ninety minutes in Lecture Hall A.
+    announcements:
+      - title: Midterm room change
+        author: okonkwo
+        date: 2026-09-12 13:25
+        pinned: true
+        body: >-
+          The midterm moves to Lecture Hall A (from SB 110). Same time. Seating
+          chart goes up on the door the morning of the exam.
+
+  - id: statistical-machine-learning
+    code: DS-402
+    title: Statistical Machine Learning
+    semester: fall-2026
+    category: data
+    status: published
+    level: graduate
+    credits: 3
+    capacity: 60
+    enrolled: 58
+    color: "#10b981"
+    location: Engineering Hall, Room 118
+    professors: [varga]
+    assistants: [mehta]
+    tags: [machine-learning, python, project-based, elective]
+    summary: From regularised regression to gradient boosting, with an emphasis on evaluation done honestly.
+    description: >-
+      Covers the bias–variance decomposition, regularisation, kernel methods,
+      tree ensembles, and neural networks, always returning to the question of
+      whether a reported number would survive a new sample. Assignments use
+      scikit-learn and PyTorch; the final project runs on a dataset you choose
+      and is graded partly on how well the evaluation resists leakage.
+    prerequisites:
+      - MATH-214 Linear Algebra
+      - STAT-201 Probability
+    objectives:
+      - Choose a model class from the structure of the data, not from habit.
+      - Design a validation scheme that matches how the model will be deployed.
+      - Diagnose overfitting and leakage from learning curves.
+    schedule:
+      - { day: Tue, start: "09:00", end: "11:00", room: EH 118 }
+      - { day: Thu, start: "16:00", end: "17:30", room: EH Lab A }
+    grading:
+      - { label: Assignments, weight: 40 }
+      - { label: Midterm, weight: 20 }
+      - { label: Final project, weight: 40 }
+    modules:
+      - { id: foundations, title: Supervised learning foundations }
+      - { id: regularisation, title: Regularisation and model selection }
+      - { id: ensembles, title: Ensembles and neural networks }
+    materials:
+      - title: Lecture 2 — Bias, variance, and what a test set is for
+        type: slides
+        file: lec02-bias-variance.pdf
+        module: foundations
+        week: 2
+        author: varga
+        tags: [machine-learning]
+        added: 2026-09-15
+        downloads: 276
+      - title: The Elements of Statistical Learning
+        type: ebook
+        url: https://hastie.su.domains/ElemStatLearn/
+        author: varga
+        tags: [machine-learning, core]
+        added: 2026-09-07
+        downloads: 402
+        description: Reference text, free from the authors. Chapters 3, 7, and 10 are assigned.
+      - title: Cross-validation done wrong — worked examples
+        type: code
+        url: https://git.university.edu/ds402/cv-pitfalls
+        module: regularisation
+        week: 5
+        author: mehta
+        tags: [python, machine-learning]
+        added: 2026-10-06
+        downloads: 214
+        description: >-
+          Four notebooks, each leaking in a different way. Find the leak before
+          reading the last cell.
+      - title: Housing prices dataset (cleaned)
+        type: dataset
+        file: housing-clean.csv
+        module: regularisation
+        week: 5
+        author: mehta
+        tags: [machine-learning]
+        added: 2026-10-06
+        downloads: 198
+        description: 41,320 rows. The split by transaction date is the one to use for Assignment 2.
+      - title: Gradient boosting from scratch — recording
+        type: video
+        url: https://media.university.edu/ds402/gbm-live
+        module: ensembles
+        week: 9
+        author: varga
+        tags: [machine-learning]
+        added: 2026-11-03
+        downloads: 163
+        description: 1h 12m live-coded session; the residual plot at 38:00 is the one referenced in the slides.
+    assignments:
+      - title: Assignment 1 — Regression baselines
+        type: homework
+        released: 2026-09-07
+        due: 2026-09-16 23:59
+        points: 100
+        weight: 13
+        author: mehta
+        tags: [machine-learning, python]
+        submissions: 58
+        graded: 58
+        description: >-
+          Linear regression from scratch, then with scikit-learn, on the same
+          data. The numbers should match to six decimals; explain them if not.
+      - title: Assignment 2 — Regularisation and model selection
+        type: homework
+        released: 2026-09-21
+        due: 2026-10-07 23:59
+        points: 100
+        weight: 13
+        author: mehta
+        tags: [machine-learning, python]
+        attachment: a2.pdf
+        submissions: 44
+        graded: 9
+        description: >-
+          Fit ridge and lasso to the housing dataset with a temporal split.
+          Report test RMSE, and explain in three sentences why a random split
+          would have flattered your model.
+      - title: Quiz 3 — Kernels
+        type: quiz
+        released: 2026-09-14
+        due: 2026-09-22 09:20
+        points: 20
+        weight: 2
+        author: varga
+        allowLate: false
+        description: >-
+          Twenty minutes, in class. Covers the kernel trick, Mercer's condition,
+          and choosing a bandwidth.
+      - title: Final project — dataset proposal
+        type: project
+        released: 2026-09-21
+        due: 2026-10-09 17:00
+        points: 40
+        weight: 5
+        author: varga
+        tags: [project-based]
+        allowLate: false
+        submissions: 11
+        description: >-
+          One page: the dataset, the prediction target, how the train/test split
+          mirrors deployment, and the baseline you must beat.
+    announcements:
+      - title: Housing dataset re-uploaded
+        author: mehta
+        date: 2026-09-09 18:05
+        body: >-
+          The first upload had 212 duplicate rows from the 2019 partition. The
+          cleaned file is up; re-download it before running Assignment 2.
+          Results computed on the old file will not match the grader.
+
+  - id: digital-signal-processing
+    code: EE-315
+    title: Digital Signal Processing
+    semester: fall-2026
+    category: ee
+    status: published
+    level: undergraduate
+    credits: 4
+    capacity: 70
+    enrolled: 52
+    color: "#f59e0b"
+    location: Tesla Lab, Room 120
+    professors: [ibrahim]
+    assistants: [diallo]
+    tags: [core, lab]
+    summary: Sampling, the DFT, filter design, and a hardware lab on an embedded DSP board.
+    description: >-
+      Starts from the sampling theorem and builds to FIR and IIR filter design,
+      with a lab track on a TI board where you implement a real-time equaliser.
+      The written assignments are heavy on transforms; the labs are heavy on
+      debugging fixed-point arithmetic.
+    prerequisites: [EE-201 Signals and Systems]
+    objectives:
+      - Relate a discrete spectrum to its continuous-time original.
+      - Design an FIR filter to a stated specification.
+      - Implement a fixed-point filter under real-time constraints.
+    schedule:
+      - { day: Mon, start: "13:00", end: "14:30", room: TL 120 }
+      - { day: Thu, start: "10:00", end: "12:00", room: TL DSP Lab }
+    grading:
+      - { label: Labs, weight: 35 }
+      - { label: Homework, weight: 20 }
+      - { label: Final exam, weight: 45 }
+    modules:
+      - { id: sampling, title: Sampling and reconstruction }
+      - { id: dft, title: The DFT and the FFT }
+      - { id: filters, title: Filter design }
+    materials:
+      - title: Lecture 1 — Sampling and aliasing
+        type: slides
+        file: lec01-sampling.pdf
+        module: sampling
+        week: 1
+        author: ibrahim
+        added: 2026-09-07
+        downloads: 154
+      - title: FFT worked examples
+        type: note
+        file: fft-examples.pdf
+        module: dft
+        week: 4
+        author: diallo
+        tags: [exam-prep]
+        added: 2026-09-28
+        downloads: 131
+      - title: Lab 3 — Real-time equaliser on the TI board
+        type: note
+        file: lab3.pdf
+        module: filters
+        week: 8
+        author: diallo
+        tags: [lab]
+        added: 2026-10-26
+        downloads: 97
+        description: Bring headphones. Fixed-point overflow is the failure mode you will hit first.
+      - title: Filter design reference tables
+        type: link
+        url: https://www.dsprelated.com/freebooks/filters/
+        module: filters
+        week: 8
+        author: ibrahim
+        added: 2026-10-26
+        downloads: 64
+    assignments:
+      - title: Lab 3 — Real-time equaliser
+        type: lab
+        released: 2026-09-07
+        due: 2026-09-20 23:59
+        points: 100
+        weight: 12
+        author: diallo
+        tags: [lab]
+        submissions: 22
+        graded: 5
+        description: >-
+          Implement a five-band equaliser in fixed point on the TI board. Demo in
+          lab; submit the source and a short note on how you handled overflow.
+      - title: Homework 4 — FIR design
+        type: homework
+        released: 2026-09-13
+        due: 2026-10-01 23:59
+        points: 50
+        weight: 5
+        author: ibrahim
+        allowLate: false
+        description: >-
+          Design an FIR low-pass filter to a 40 dB stopband specification using
+          windowing, then again with Parks–McClellan, and compare the orders.
+    announcements:
+      - title: Bring headphones to Lab 3
+        author: diallo
+        date: 2026-09-07 08:50
+        body: The lab has eight pairs for thirty people. Wired, 3.5 mm.
+
+  # A draft is visible to staff but not published to students.
+  - id: systems-reading-group
+    code: CE-690
+    title: Systems Reading Group
+    semester: fall-2026
+    category: seminar
+    status: draft
+    level: graduate
+    credits: 1
+    capacity: 20
+    enrolled: 0
+    color: "#a855f7"
+    location: Engineering Hall, Room 418
+    professors: [nasseri]
+    tags: [systems, elective]
+    summary: One paper a week, one discussion leader a week. No exams, no slides from the instructor.
+    description: >-
+      A one-credit seminar. Everyone reads the week's paper and writes a
+      half-page review before Friday; one student leads the discussion. Papers
+      are chosen by vote in the first session and lean toward storage,
+      scheduling, and anything with a surprising benchmark.
+    objectives:
+      - Read a paper a week and defend a position about it.
+    schedule:
+      - { day: Fri, start: "12:00", end: "13:30", room: EH 418 }
+    grading:
+      - { label: Weekly reviews, weight: 60 }
+      - { label: Discussion leading, weight: 40 }
+
+  # ---------------------------------------------------------------------------
+  # Completed courses. `status: archived` moves a course to the Archive page
+  # while keeping its materials searchable from the library.
+  # ---------------------------------------------------------------------------
+  - id: algorithm-design
+    code: CE-310
+    title: Algorithm Design
+    semester: fall-2025
+    category: cs
+    status: archived
+    archived: 2026-01-20
+    level: undergraduate
+    credits: 4
+    capacity: 120
+    enrolled: 118
+    color: "#8b5cf6"
+    location: Engineering Hall, Room 201
+    professors: [nasseri]
+    assistants: [chen, mehta]
+    tags: [core, theory]
+    summary: Greedy, divide and conquer, dynamic programming, flows, and NP-completeness.
+    description: >-
+      The standard algorithms course, taught from Kleinberg & Tardos with
+      supplementary notes. Problem sets are written; a small coding component
+      checks that your dynamic programme actually runs in the complexity you
+      claimed.
+    prerequisites: [CE-210 Data Structures]
+    objectives:
+      - Prove a greedy algorithm correct with an exchange argument.
+      - Recognise a problem as NP-complete and choose an approximation.
+    schedule:
+      - { day: Tue, start: "10:00", end: "11:30", room: EH 201 }
+      - { day: Thu, start: "10:00", end: "11:30", room: EH 201 }
+    grading:
+      - { label: Problem sets, weight: 35 }
+      - { label: Midterm, weight: 25 }
+      - { label: Final exam, weight: 40 }
+    materials:
+      - title: Full lecture slide archive (Fall 2025)
+        type: slides
+        file: f25-all-slides.zip
+        author: nasseri
+        tags: [theory]
+        added: 2026-01-19
+        downloads: 833
+        description: All 26 lectures, bundled at the end of the semester.
+      - title: Final exam with solutions (Fall 2025)
+        type: note
+        file: f25-final-solutions.pdf
+        author: chen
+        tags: [exam-prep]
+        added: 2026-01-22
+        downloads: 1204
+
+  - id: probability-for-engineers
+    code: STAT-201
+    title: Probability for Engineers
+    semester: fall-2025
+    category: math
+    status: archived
+    archived: 2026-01-18
+    level: undergraduate
+    credits: 3
+    capacity: 100
+    enrolled: 96
+    color: "#ec4899"
+    location: Science Building, Room 110
+    professors: [okonkwo]
+    assistants: [lund]
+    tags: [core, python]
+    summary: Random variables, limit theorems, and Monte Carlo, taught with simulation alongside proof.
+    description: >-
+      Covers discrete and continuous random variables, expectation, the law of
+      large numbers, and the central limit theorem, each paired with a short
+      simulation so the asymptotics are visible rather than asserted.
+    prerequisites: [MATH-102 Calculus II]
+    objectives:
+      - Model a random experiment and compute its expectation.
+    schedule:
+      - { day: Wed, start: "14:00", end: "17:00", room: SB 110 }
+    grading:
+      - { label: Homework, weight: 30 }
+      - { label: Final exam, weight: 70 }
+    materials:
+      - title: Simulation notebooks — LLN and CLT
+        type: code
+        url: https://git.university.edu/stat201/simulations
+        author: lund
+        tags: [python]
+        added: 2025-11-04
+        downloads: 341
+
+  - id: modern-web-engineering
+    code: CE-255
+    title: Modern Web Engineering
+    semester: summer-2025
+    category: cs
+    status: archived
+    archived: 2025-08-20
+    level: undergraduate
+    credits: 3
+    capacity: 45
+    enrolled: 41
+    color: "#14b8a6"
+    location: Online
+    professors: [varga]
+    assistants: [mehta]
+    tags: [elective, project-based]
+    summary: Accessible, fast front ends and the APIs behind them, delivered as one team project.
+    description: >-
+      A project course. Teams of four ship a working application over the
+      semester with weekly reviews on accessibility, performance budgets, and
+      test coverage. The stack is TypeScript and React on the client with a REST
+      service behind it.
+    prerequisites: [CE-210 Data Structures]
+    objectives:
+      - Ship an accessible application against a performance budget.
+    schedule:
+      - { day: Tue, start: "18:00", end: "20:00", room: Online }
+    grading:
+      - { label: Team project, weight: 70 }
+      - { label: Code reviews, weight: 30 }
+    materials:
+      - title: Accessibility review checklist
+        type: note
+        file: a11y-checklist.pdf
+        author: varga
+        tags: [project-based]
+        added: 2025-07-01
+        downloads: 267
+        description: What each weekly review checks, in the order it is checked.

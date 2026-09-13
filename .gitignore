@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Course files. These are published with the site but deliberately kept out of
+# the repository — see content/README.md. Deploy from a machine that has them.
+public/courses/*
+!public/courses/.gitkeep
