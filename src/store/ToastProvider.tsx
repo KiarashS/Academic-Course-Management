@@ -3,37 +3,28 @@ import { createContext, use, useCallback, useMemo, useState, type ReactNode } fr
 export interface Toast {
   id: number
   message: string
-  tone: 'success' | 'error' | 'info'
-  action?: { label: string; run: () => void }
 }
 
 interface ToastContextValue {
   toasts: Toast[]
-  notify: (message: string, tone?: Toast['tone'], action?: Toast['action']) => void
-  dismiss: (id: number) => void
+  notify: (message: string) => void
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null)
 
 let nextId = 1
 
+/** Small confirmations for things like copying a link. Nothing is persisted. */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
 
-  const dismiss = useCallback((id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id))
+  const notify = useCallback((message: string) => {
+    const id = nextId++
+    setToasts((prev) => [...prev, { id, message }])
+    window.setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 2600)
   }, [])
 
-  const notify = useCallback<ToastContextValue['notify']>(
-    (message, tone = 'success', action) => {
-      const id = nextId++
-      setToasts((prev) => [...prev, { id, message, tone, action }])
-      window.setTimeout(() => dismiss(id), action ? 8000 : 4000)
-    },
-    [dismiss],
-  )
-
-  const value = useMemo(() => ({ toasts, notify, dismiss }), [toasts, notify, dismiss])
+  const value = useMemo(() => ({ toasts, notify }), [toasts, notify])
   return <ToastContext value={value}>{children}</ToastContext>
 }
 

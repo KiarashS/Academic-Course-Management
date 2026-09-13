@@ -3,14 +3,14 @@ import type { Person } from '../../types'
 
 export function Avatar({
   person,
-  size = 'md',
+  size = 'small',
 }: {
   person: Pick<Person, 'name' | 'avatarColor'>
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'small' | 'large' | 'huge'
 }) {
   return (
     <span
-      className={`avatar${size === 'md' ? '' : ` avatar--${size}`}`}
+      className={`avatar${size === 'small' ? '' : ` avatar--${size}`}`}
       style={{ background: person.avatarColor }}
       title={person.name}
       aria-hidden="true"
@@ -20,7 +20,7 @@ export function Avatar({
   )
 }
 
-export function AvatarStack({
+export function AvatarGroup({
   people,
   max = 4,
 }: {
@@ -30,12 +30,12 @@ export function AvatarStack({
   const shown = people.slice(0, max)
   const extra = people.length - shown.length
   return (
-    <span className="avatar-stack">
+    <span className="avatar-group">
       {shown.map((person) => (
-        <Avatar key={person.id} person={person} size="sm" />
+        <Avatar key={person.id} person={person} />
       ))}
       {extra > 0 && (
-        <span className="avatar avatar--sm" style={{ background: 'var(--fg-subtle)' }}>
+        <span className="avatar" style={{ background: 'var(--primary-low-mid)' }}>
           +{extra}
         </span>
       )}

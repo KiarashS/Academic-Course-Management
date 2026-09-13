@@ -1,12 +1,14 @@
 # Course Hub
 
-A course management workspace for professors and teaching assistants. Courses carry their own
-materials, assignments, modules, announcements, and staff; everything is searchable across the
-department and organised by semester, category, and tag.
+A read-only course site: courses with their materials, coursework, announcements, and teaching
+staff, searchable across the department and organised by semester, category, and tag. The interface
+follows Discourse's visual language — a slim header, a quiet sidebar, and list-first pages.
 
 Built with React 19, TypeScript, Vite, and React Router, and deployed as a static site to GitHub
-Pages. There is no backend and no database: every course, material, and deadline comes from one
-file, `content/courses.yaml`, and the files themselves sit in `public/courses/<course id>/`.
+Pages. There is no backend and no database, so there is nothing to sign in to and nothing to edit in
+the browser: every course, material, and deadline comes from one file, `content/courses.yaml`, and
+the files themselves sit in `public/courses/<course id>/`. Changing the site means changing that
+file and pushing it.
 
 ## Running it
 
@@ -114,22 +116,26 @@ Pass `BASE_PATH=/Academic-Course-Management/ npm run build` to produce a build f
 `github.io` project URL instead. The Actions build never needs this — it reads the real value from
 the Pages API.
 
-## Editing in the browser
+## Why there is nothing to edit here
 
-The forms still work, and they are the easiest way to draft a course. On a static site nothing the
-browser does can publish, so edits are kept as a local draft: a banner says so, and Settings →
-Publishing exports the whole workspace back out as `courses.yaml` to replace the file with. A draft
-is discarded automatically when the content file changes underneath it, so a published update is
-never silently shadowed by a stale local edit.
+GitHub Pages serves static files and runs no code of its own, so a form that creates a course or
+uploads a file has nowhere to write to. Rather than ship buttons that cannot work, the site has
+none: no sign-in, no account switching, no create, edit, or delete. Content is authored in
+`content/courses.yaml`, which means it has a full history, can be reviewed in a pull request, and is
+identical for everyone who visits.
+
+A course marked `status: draft` is withheld from the site entirely, along with its materials and
+coursework, rather than shown behind a label — there is no login to hide it behind. That makes
+`draft` a way to stage content that is not ready yet.
 
 ## What is in it
 
 **Courses.** Code, title, summary and full description, semester, category, tags, level, credits,
 capacity and enrolment, language, room, accent colour, meeting times, prerequisites, learning
-objectives, and a weighted grading scheme. A course is a draft, published, or archived. Professors
-create, edit, archive, restore, duplicate into another semester, and delete; duplicating copies the
-modules and materials and resets enrolment. Courses you have finished go in with `status: archived`,
-which keeps their materials searchable while moving the course itself to the Archive page.
+objectives, and a weighted grading scheme. A course page reads like a Discourse topic: the
+description, objectives, and syllabus as a post stream, with the timetable and grading alongside.
+Courses you have finished go in with `status: archived`, which keeps their materials searchable
+while moving the course itself to the Archive page.
 
 **Materials.** Slides, e-books, notes, videos, papers, datasets, code, and external links, each with
 a file or URL, size, week number, optional module, uploader, tags, a download counter, and a
@@ -159,13 +165,11 @@ deadline, plus a day agenda.
 **Search.** One ranked index over courses, materials, assignments, and people, reachable from the
 search page or the ⌘K quick switcher.
 
-**Roles.** Switch the signed-in account from the top bar. Professors own the courses they lead;
-teaching assistants manage materials, assignments, and announcements in the courses they are
-assigned to but cannot edit the course record itself. The interface hides what the current account
-cannot do.
+**Categories and tags.** Categories get Discourse-style boxes with a colour stripe and their recent
+courses; tags get a cloud with usage counts, and each has a page listing everything under it.
 
-Also: light, dark, and system themes, a compact density mode, a collapsible sidebar, keyboard
-shortcuts (⌘K, `/`, Esc), toast notifications, and JSON export and import from Settings.
+Also: light, dark, and system themes that follow the operating system by default, a collapsible
+sidebar, and `/` or ⌘K anywhere for search.
 
 ## Layout
 
@@ -183,14 +187,14 @@ src/
   components/
     assignments/   assignment row and form
     courses/       course card, table row, and form
-    layout/        app shell, sidebar, top bar, command palette, toasts, draft banner
+    layout/        app shell, header, sidebar, search menu, toasts
     materials/     material row and form
     ui/            button, badge, avatar, modal, fields, menu, tag picker, icons
-  content/         YAML → app data, with validation, and the export back out
+  content/         YAML → app data, with validation
   lib/             formatting, selectors, search, id generation, storage
   pages/           one file per route
-  store/           data, preferences, toasts, session and permissions
-  styles/          tokens, base, layout, components, views
+  store/           theme preference and toasts — the only browser state there is
+  styles/          Discourse-derived tokens, base, layout, components, views
   types/           the domain model
 ```
 
@@ -203,14 +207,14 @@ and announcements with it, and removing a person unassigns them from every cours
 
 `content/courses.yaml` is parsed at build time by a small Vite plugin, expanded into the app's data
 model by `src/content/loadContent.ts`, and validated there: unknown ids, bad weekdays, impossible
-dates, and missing required fields all fail with a message naming the entry. A second virtual module
+dates, and missing required fields all fail with a message naming the entry. It also catches the
+one YAML mistake that otherwise fails silently — a `{ … }` line whose value contains a comma, where
+everything after the comma is quietly dropped. A second virtual module
 reports the real size of everything under `public/courses`, so sizes are read from the files rather
 than typed into the YAML.
 
-`localStorage` holds two things: preferences under `acm.prefs.v1`, and — only once you edit
-something — a draft under `acm.draft.v2`, stamped with a hash of the content file it branched from.
-When the hash stops matching, the draft is dropped and the published content loads instead. Nothing
-leaves the browser.
+`localStorage` holds one thing: the visitor's theme and sidebar preference, under
+`coursehub.prefs.v1`. Nothing else is stored and nothing leaves the browser.
 
 The repository ships with a sample department in `courses.yaml`. Replace those entries with your
 own; it is one file.

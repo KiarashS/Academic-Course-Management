@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useData } from '../store/DataProvider'
-import { useSession } from '../store/session'
+import { data } from '../content'
 import { dayShort, formatDate, isSameDay } from '../lib/format'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
-import { Badge } from '../components/ui/Badge'
+import { StatusPill } from '../components/ui/Badge'
 import { EmptyState } from '../components/ui/EmptyState'
 
 interface DayEvent {
@@ -26,16 +25,10 @@ const startOfGrid = (month: Date) => {
 }
 
 export function Calendar() {
-  const { data } = useData()
-  const { myCourses } = useSession()
   const [cursor, setCursor] = useState(() => new Date())
-  const [onlyMine, setOnlyMine] = useState(true)
   const [selected, setSelected] = useState<Date>(() => new Date())
 
-  const courses = useMemo(() => {
-    const pool = onlyMine && myCourses.length > 0 ? myCourses : data.courses
-    return pool.filter((c) => c.status !== 'archived')
-  }, [data.courses, myCourses, onlyMine])
+  const courses = useMemo(() => data.courses.filter((c) => c.status !== 'archived'), [])
 
   const eventsFor = useMemo(() => {
     return (day: Date): DayEvent[] => {
@@ -79,7 +72,7 @@ export function Calendar() {
       }
       return events.sort((a, b) => a.time.localeCompare(b.time))
     }
-  }, [courses, data.assignments, data.semesters])
+  }, [courses])
 
   const gridStart = startOfGrid(cursor)
   const days = Array.from({ length: 42 }, (_, index) => {
@@ -92,41 +85,30 @@ export function Calendar() {
   const selectedEvents = eventsFor(selected)
 
   return (
-    <div className="page">
-      <header className="page-header">
+    <div className="d-container">
+      <div className="page-title">
         <div>
-          <p className="page-header__eyebrow">Schedule</p>
           <h1>Calendar</h1>
-          <p>Class sessions from each course timetable, plus every assignment deadline.</p>
+          <p>Class sessions from each course timetable, plus every coursework deadline.</p>
         </div>
-        <div className="page-header__actions">
-          <Button
-            variant={onlyMine ? 'primary' : 'secondary'}
-            icon="award"
-            aria-pressed={onlyMine}
-            onClick={() => setOnlyMine((value) => !value)}
-          >
-            My courses only
-          </Button>
-          <Button
-            onClick={() => {
-              setCursor(new Date())
-              setSelected(new Date())
-            }}
-          >
-            Today
-          </Button>
-        </div>
-      </header>
+        <Button
+          onClick={() => {
+            setCursor(new Date())
+            setSelected(new Date())
+          }}
+        >
+          Today
+        </Button>
+      </div>
 
-      <section className="grid grid--split">
-        <div className="card calendar">
+      <section className="d-split">
+        <div className="panel calendar">
           <div className="calendar__header">
             <Button
-              variant="ghost"
+              variant="flat"
               icon="chevronLeft"
               iconOnly
-              size="sm"
+              small
               aria-label="Previous month"
               onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
             />
@@ -134,10 +116,10 @@ export function Calendar() {
               {cursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
             </h2>
             <Button
-              variant="ghost"
+              variant="flat"
               icon="chevronRight"
               iconOnly
-              size="sm"
+              small
               aria-label="Next month"
               onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
             />
@@ -189,10 +171,10 @@ export function Calendar() {
           </div>
         </div>
 
-        <div className="card">
-          <div className="card__header">
+        <div className="panel">
+          <div className="panel__header">
             <div>
-              <h3>{formatDate(selected)}</h3>
+              <h2>{formatDate(selected)}</h2>
               <p>
                 {selectedEvents.length === 0
                   ? 'Nothing scheduled.'
@@ -200,7 +182,7 @@ export function Calendar() {
               </p>
             </div>
           </div>
-          <div className="card__body">
+          <div className="panel__body">
             {selectedEvents.length === 0 ? (
               <EmptyState icon="calendar" title="Free day" description="No sessions or deadlines." />
             ) : (
@@ -210,14 +192,14 @@ export function Calendar() {
                     <span className="agenda__time">{event.time}</span>
                     <span className="agenda__bar" style={{ background: event.color }} />
                     <span className="agenda__body">
-                      <Link to={event.href} className="link-strong">
+                      <Link to={event.href}>
                         {event.label}
                       </Link>
-                      <span className="muted-text">{event.detail}</span>
+                      <span className="muted">{event.detail}</span>
                     </span>
-                    <Badge tone={event.kind === 'deadline' ? 'warning' : 'info'}>
+                    <StatusPill tone={event.kind === 'deadline' ? 'soon' : 'info'} plain>
                       {event.kind === 'deadline' ? 'Due' : 'Class'}
-                    </Badge>
+                    </StatusPill>
                   </li>
                 ))}
               </ul>

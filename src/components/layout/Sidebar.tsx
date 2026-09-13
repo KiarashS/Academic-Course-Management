@@ -1,93 +1,101 @@
-import { NavLink } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Icon, type IconName } from '../ui/Icon'
-import { useData } from '../../store/DataProvider'
-import { useSession } from '../../store/session'
-import { content } from '../../content/loadContent'
+import { data } from '../../content'
+import { semesterLabel } from '../../lib/selectors'
 
-interface NavItem {
+interface Item {
   to: string
   label: string
   icon: IconName
   count?: number
-  end?: boolean
 }
 
-export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
-  const { data } = useData()
-  const { user, myCourses } = useSession()
+export function Sidebar({ onNavigate }: { onNavigate: () => void }) {
+  const location = useLocation()
+  const here = `${location.pathname}${location.search}`
 
-  const active = data.courses.filter((c) => c.status !== 'archived')
+  /** Active when the whole path-and-query matches, so filtered links differ. */
+  const isActive = (to: string) => {
+    if (to.includes('?')) return here === to
+    if (to === '/') return location.pathname === '/' && location.search === ''
+    return location.pathname === to || location.pathname.startsWith(`${to}/`)
+  }
+
+  const current = data.semesters.find((s) => s.current)
+  const active = data.courses.filter((c) => c.status === 'published')
   const archived = data.courses.filter((c) => c.status === 'archived')
+  const thisTerm = active.filter((c) => c.semesterId === current?.id)
 
-  const teaching: NavItem[] = [
-    { to: '/', label: 'Dashboard', icon: 'dashboard', end: true },
-    { to: '/courses', label: 'Courses', icon: 'courses', count: active.length },
-    { to: '/materials', label: 'Materials', icon: 'materials', count: data.materials.length },
-    { to: '/assignments', label: 'Assignments', icon: 'assignments', count: data.assignments.length },
-    { to: '/calendar', label: 'Calendar', icon: 'calendar' },
+  const sections: { heading: string; items: Item[] }[] = [
+    {
+      heading: 'Courses',
+      items: [
+        { to: '/', label: 'All courses', icon: 'courses', count: active.length },
+        {
+          to: `/?semester=${current?.id ?? ''}`,
+          label: current ? semesterLabel(current) : 'Current term',
+          icon: 'semesters',
+          count: thisTerm.length,
+        },
+        { to: '/archive', label: 'Archive', icon: 'archive', count: archived.length },
+      ],
+    },
+    {
+      heading: 'Browse',
+      items: [
+        { to: '/materials', label: 'Materials', icon: 'materials', count: data.materials.length },
+        {
+          to: '/assignments',
+          label: 'Coursework',
+          icon: 'assignments',
+          count: data.assignments.length,
+        },
+        { to: '/calendar', label: 'Calendar', icon: 'calendar' },
+      ],
+    },
+    {
+      heading: 'Organisation',
+      items: [
+        { to: '/categories', label: 'Categories', icon: 'category', count: data.categories.length },
+        { to: '/tags', label: 'Tags', icon: 'tags', count: data.tags.length },
+        { to: '/semesters', label: 'Semesters', icon: 'semesters', count: data.semesters.length },
+        { to: '/people', label: 'People', icon: 'people', count: data.people.length },
+      ],
+    },
   ]
-
-  const organise: NavItem[] = [
-    { to: '/people', label: 'People', icon: 'people', count: data.people.length },
-    { to: '/semesters', label: 'Semesters', icon: 'semesters', count: data.semesters.length },
-    { to: '/taxonomy', label: 'Tags & categories', icon: 'tags', count: data.tags.length },
-    { to: '/archive', label: 'Archive', icon: 'archive', count: archived.length },
-  ]
-
-  const renderItems = (items: NavItem[]) =>
-    items.map((item) => (
-      <NavLink
-        key={item.to}
-        to={item.to}
-        end={item.end}
-        onClick={onNavigate}
-        className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
-      >
-        <Icon name={item.icon} className="nav-link__icon" />
-        <span>{item.label}</span>
-        {item.count !== undefined && <span className="nav-link__count">{item.count}</span>}
-      </NavLink>
-    ))
 
   return (
-    <aside className="sidebar" data-open={open} aria-label="Main navigation">
-      <div className="sidebar__brand">
-        <span className="sidebar__mark">
-          {content.site.name
-            .split(/\s+/)
-            .map((word) => word[0])
-            .join('')
-            .slice(0, 2)
-            .toUpperCase()}
-        </span>
-        <span className="sidebar__name">
-          <strong>{content.site.name}</strong>
-          <span>{content.site.tagline}</span>
-        </span>
-      </div>
+    <nav className="d-sidebar" aria-label="Site sections">
+      {sections.map((section) => (
+        <div className="d-sidebar__section" key={section.heading}>
+          <div className="d-sidebar__heading">{section.heading}</div>
+          {section.items.map((item) => (
+            <Link
+              key={item.to + item.label}
+              to={item.to}
+              onClick={onNavigate}
+              aria-current={isActive(item.to) ? 'page' : undefined}
+              className={`d-sidebar__link${isActive(item.to) ? ' is-active' : ''}`}
+            >
+              <Icon name={item.icon} size={16} />
+              <span className="d-sidebar__label">{item.label}</span>
+              {item.count !== undefined && <span className="d-sidebar__count">{item.count}</span>}
+            </Link>
+          ))}
+        </div>
+      ))}
 
-      <nav className="stack--tight" style={{ display: 'flex', flexDirection: 'column' }}>
-        {renderItems(teaching)}
-        <div className="sidebar__section">Organisation</div>
-        {renderItems(organise)}
-        <div className="sidebar__section">Account</div>
-        {renderItems([
-          { to: '/search', label: 'Search', icon: 'search' },
-          { to: '/settings', label: 'Settings', icon: 'settings' },
-        ])}
-      </nav>
-
-      <div className="sidebar__footer">
-        <NavLink
-          to={`/people/${user.id}`}
+      <div className="d-sidebar__section">
+        <Link
+          to="/about"
           onClick={onNavigate}
-          className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
+          aria-current={isActive('/about') ? 'page' : undefined}
+          className={`d-sidebar__link${isActive('/about') ? ' is-active' : ''}`}
         >
-          <Icon name="award" className="nav-link__icon" />
-          <span>My teaching</span>
-          <span className="nav-link__count">{myCourses.length}</span>
-        </NavLink>
+          <Icon name="alert" size={16} />
+          <span className="d-sidebar__label">About this site</span>
+        </Link>
       </div>
-    </aside>
+    </nav>
   )
 }

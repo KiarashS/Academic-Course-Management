@@ -4,7 +4,6 @@ import { BrowserRouter } from 'react-router-dom'
 import { App } from './App'
 import { ContentErrorScreen } from './pages/ContentErrorScreen'
 import { contentError } from './content/loadContent'
-import { DataProvider } from './store/DataProvider'
 import { PreferencesProvider } from './store/PreferencesProvider'
 import { ToastProvider } from './store/ToastProvider'
 import './styles/index.css'
@@ -21,11 +20,9 @@ root.render(
       /* basename keeps deep links working under a GitHub Pages project path */
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <PreferencesProvider>
-          <DataProvider>
-            <ToastProvider>
-              <App />
-            </ToastProvider>
-          </DataProvider>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </PreferencesProvider>
       </BrowserRouter>
     )}

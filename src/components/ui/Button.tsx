@@ -1,24 +1,19 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { Icon, type IconName } from './Icon'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
-type Size = 'sm' | 'md' | 'lg'
-
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: Variant
-  size?: Size
+  variant?: 'default' | 'primary' | 'flat'
+  small?: boolean
   icon?: IconName
   iconOnly?: boolean
-  block?: boolean
   children?: ReactNode
 }
 
 export function Button({
-  variant = 'secondary',
-  size = 'md',
+  variant = 'default',
+  small = false,
   icon,
   iconOnly = false,
-  block = false,
   className = '',
   children,
   type = 'button',
@@ -26,18 +21,16 @@ export function Button({
 }: ButtonProps) {
   const classes = [
     'btn',
-    `btn--${variant}`,
-    size !== 'md' && `btn--${size}`,
+    variant !== 'default' && `btn--${variant}`,
+    small && 'btn--small',
     iconOnly && 'btn--icon',
-    block && 'btn--block',
     className,
   ]
     .filter(Boolean)
     .join(' ')
-
   return (
     <button type={type} className={classes} {...rest}>
-      {icon && <Icon name={icon} size={size === 'sm' ? 14 : 16} />}
+      {icon && <Icon name={icon} size={small ? 14 : 16} />}
       {!iconOnly && children}
     </button>
   )

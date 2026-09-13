@@ -7,14 +7,14 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { defaultPreferences, loadPreferences, savePreferences, type Preferences } from '../lib/storage'
+import { loadPreferences, savePreferences, type Preferences } from '../lib/storage'
 
 interface PreferencesContextValue {
   prefs: Preferences
   setPref: <K extends keyof Preferences>(key: K, value: Preferences[K]) => void
-  resetPrefs: () => void
   /** The theme actually applied, after resolving `system`. */
   resolvedTheme: 'light' | 'dark'
+  toggleTheme: () => void
 }
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null)
@@ -37,19 +37,30 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const resolvedTheme = prefs.theme === 'system' ? (systemDark ? 'dark' : 'light') : prefs.theme
 
   useEffect(() => {
-    const root = document.documentElement
-    root.dataset.theme = resolvedTheme
-    root.dataset.density = prefs.density
-    root.style.colorScheme = resolvedTheme
-  }, [resolvedTheme, prefs.density])
+    document.documentElement.dataset.theme = resolvedTheme
+    document.documentElement.style.colorScheme = resolvedTheme
+  }, [resolvedTheme])
 
   const setPref = useCallback<PreferencesContextValue['setPref']>((key, value) => {
     setPrefs((prev) => ({ ...prev, [key]: value }))
   }, [])
 
+  const toggleTheme = useCallback(() => {
+    setPrefs((prev) => ({
+      ...prev,
+      theme: (prev.theme === 'system'
+        ? window.matchMedia?.('(prefers-color-scheme: dark)').matches
+          ? 'light'
+          : 'dark'
+        : prev.theme === 'dark'
+          ? 'light'
+          : 'dark') as Preferences['theme'],
+    }))
+  }, [])
+
   const value = useMemo(
-    () => ({ prefs, setPref, resolvedTheme, resetPrefs: () => setPrefs(defaultPreferences) }),
-    [prefs, setPref, resolvedTheme],
+    () => ({ prefs, setPref, resolvedTheme, toggleTheme }),
+    [prefs, setPref, resolvedTheme, toggleTheme],
   )
 
   return <PreferencesContext value={value}>{children}</PreferencesContext>

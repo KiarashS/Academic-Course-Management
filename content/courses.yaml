@@ -18,8 +18,8 @@ semesters:
   - id: fall-2026
     term: Fall
     year: 2026
-    start: 2026-09-07
-    end: 2026-12-18
+    start: 2026-08-24
+    end: 2026-12-11
     current: true
   - id: spring-2026
     term: Spring
@@ -38,11 +38,26 @@ semesters:
     end: 2025-08-15
 
 categories:
-  - { id: cs, name: Computer Science, color: "#6366f1", description: Systems, algorithms, and software engineering. }
-  - { id: math, name: Mathematics, color: "#0ea5e9", description: Pure and applied mathematics. }
-  - { id: data, name: Data Science, color: "#10b981", description: Statistics, machine learning, and data engineering. }
-  - { id: ee, name: Electrical Engineering, color: "#f59e0b", description: Signals, circuits, and embedded systems. }
-  - { id: seminar, name: Seminar, color: "#a855f7", description: Reading groups and research seminars. }
+  - id: cs
+    name: Computer Science
+    color: "#6366f1"
+    description: Systems, algorithms, and software engineering.
+  - id: math
+    name: Mathematics
+    color: "#0ea5e9"
+    description: Pure and applied mathematics.
+  - id: data
+    name: Data Science
+    color: "#10b981"
+    description: Statistics, machine learning, and data engineering.
+  - id: ee
+    name: Electrical Engineering
+    color: "#f59e0b"
+    description: Signals, circuits, and embedded systems.
+  - id: seminar
+    name: Seminar
+    color: "#a855f7"
+    description: Reading groups and research seminars.
 
 tags:
   - { id: core, name: core, color: "#6366f1" }
@@ -189,11 +204,21 @@ courses:
       - { label: Midterm, weight: 20 }
       - { label: Final exam, weight: 25 }
     modules:
-      - { id: processes, title: Processes and the kernel boundary, summary: System calls, traps, and the process abstraction. }
-      - { id: scheduling, title: Scheduling, summary: Round robin through CFS, and how to measure fairness. }
-      - { id: memory, title: Virtual memory, summary: Paging, TLBs, copy-on-write, and page replacement. }
-      - { id: concurrency, title: Concurrency, summary: Locks, condition variables, and deadlock. }
-      - { id: filesystems, title: File systems, summary: Inodes, journaling, and crash consistency. }
+      - id: processes
+        title: Processes and the kernel boundary
+        summary: System calls, traps, and the process abstraction.
+      - id: scheduling
+        title: Scheduling
+        summary: Round robin through CFS, and how to measure fairness.
+      - id: memory
+        title: Virtual memory
+        summary: Paging, TLBs, copy-on-write, and page replacement.
+      - id: concurrency
+        title: Concurrency
+        summary: Locks, condition variables, and deadlock.
+      - id: filesystems
+        title: File systems
+        summary: Inodes, journaling, and crash consistency.
     materials:
       - title: Lecture 1 — What an operating system actually does
         type: slides
@@ -202,7 +227,7 @@ courses:
         week: 1
         author: nasseri
         tags: [systems]
-        added: 2026-09-07
+        added: 2026-08-24
         downloads: 312
         description: Course logistics, the kernel/user boundary, and a tour of the teaching kernel.
       - title: "Operating Systems: Three Easy Pieces"
@@ -210,7 +235,7 @@ courses:
         url: https://pages.cs.wisc.edu/~remzi/OSTEP/
         author: nasseri
         tags: [core]
-        added: 2026-09-07
+        added: 2026-08-24
         downloads: 596
         description: Primary textbook. Free online; chapter numbers in the syllabus refer to this edition.
       - title: Lab 0 setup guide — toolchain and QEMU
@@ -220,7 +245,7 @@ courses:
         week: 1
         author: mehta
         tags: [lab, c-programming]
-        added: 2026-09-08
+        added: 2026-08-25
         downloads: 288
         description: Cross-compiler, QEMU, and the grading harness, on Linux and macOS.
       - title: Lecture 4 — CPU scheduling
@@ -230,7 +255,7 @@ courses:
         week: 3
         author: nasseri
         tags: [systems]
-        added: 2026-09-21
+        added: 2026-08-31
         downloads: 241
       - title: Scheduler simulator (Python)
         type: code
@@ -239,7 +264,7 @@ courses:
         week: 3
         author: chen
         tags: [python, lab]
-        added: 2026-09-22
+        added: 2026-09-01
         downloads: 176
         description: Plots turnaround and response time for FIFO, SJF, RR, and MLFQ.
       - title: Lecture 7 — Paging and the TLB
@@ -249,7 +274,7 @@ courses:
         week: 5
         author: nasseri
         tags: [systems]
-        added: 2026-10-05
+        added: 2026-09-07
         downloads: 198
       - title: Recitation recording — page fault walkthrough
         type: video
@@ -258,7 +283,7 @@ courses:
         week: 5
         author: chen
         tags: [systems]
-        added: 2026-10-07
+        added: 2026-09-08
         downloads: 134
         description: 52 minutes. Single-steps a fault from the trap frame to the physical frame allocator.
       - title: Deadlock detection worksheet
@@ -268,7 +293,7 @@ courses:
         week: 8
         author: mehta
         tags: [exam-prep]
-        added: 2026-10-26
+        added: 2026-09-11
         visible: false
         description: Draft — release with the midterm review session.
     assignments:
@@ -402,7 +427,7 @@ courses:
         week: 1
         author: nasseri
         tags: [theory]
-        added: 2026-09-08
+        added: 2026-08-25
         downloads: 142
         description: Week 1 reading. Review due Thursday.
       - title: In Search of an Understandable Consensus Algorithm (Raft)
@@ -412,7 +437,7 @@ courses:
         week: 4
         author: nasseri
         tags: [theory, systems]
-        added: 2026-09-29
+        added: 2026-09-03
         downloads: 137
       - title: Raft lab skeleton (Go)
         type: code
@@ -421,7 +446,7 @@ courses:
         week: 4
         author: chen
         tags: [lab, project-based]
-        added: 2026-09-30
+        added: 2026-09-04
         downloads: 119
         description: Tests run under -race. Start from the leader election test only.
       - title: Lecture 9 — Consistency models, ranked
@@ -431,7 +456,7 @@ courses:
         week: 7
         author: nasseri
         tags: [theory]
-        added: 2026-10-20
+        added: 2026-09-10
         downloads: 96
     assignments:
       - title: Paper review — Raft
@@ -531,14 +556,14 @@ courses:
         week: 1
         author: okonkwo
         tags: [theory]
-        added: 2026-09-07
+        added: 2026-08-24
         downloads: 508
       - title: Introduction to Linear Algebra — course reader
         type: ebook
         file: reader.pdf
         author: okonkwo
         tags: [core]
-        added: 2026-09-07
+        added: 2026-08-24
         downloads: 721
         description: Selected chapters, cleared by the library for course use.
       - title: Eigenvalue drill set with solutions
@@ -548,7 +573,7 @@ courses:
         week: 6
         author: lund
         tags: [exam-prep]
-        added: 2026-10-12
+        added: 2026-09-09
         downloads: 445
       - title: SVD image compression notebook
         type: code
@@ -557,7 +582,7 @@ courses:
         week: 10
         author: lund
         tags: [python]
-        added: 2026-11-09
+        added: 2026-09-12
         downloads: 233
         description: Rank-k reconstruction of a 4K photograph, with error curves.
     assignments:
@@ -654,14 +679,14 @@ courses:
         week: 2
         author: varga
         tags: [machine-learning]
-        added: 2026-09-15
+        added: 2026-08-27
         downloads: 276
       - title: The Elements of Statistical Learning
         type: ebook
         url: https://hastie.su.domains/ElemStatLearn/
         author: varga
         tags: [machine-learning, core]
-        added: 2026-09-07
+        added: 2026-08-24
         downloads: 402
         description: Reference text, free from the authors. Chapters 3, 7, and 10 are assigned.
       - title: Cross-validation done wrong — worked examples
@@ -671,7 +696,7 @@ courses:
         week: 5
         author: mehta
         tags: [python, machine-learning]
-        added: 2026-10-06
+        added: 2026-09-08
         downloads: 214
         description: >-
           Four notebooks, each leaking in a different way. Find the leak before
@@ -683,7 +708,7 @@ courses:
         week: 5
         author: mehta
         tags: [machine-learning]
-        added: 2026-10-06
+        added: 2026-09-08
         downloads: 198
         description: 41,320 rows. The split by transaction date is the one to use for Assignment 2.
       - title: Gradient boosting from scratch — recording
@@ -693,7 +718,7 @@ courses:
         week: 9
         author: varga
         tags: [machine-learning]
-        added: 2026-11-03
+        added: 2026-09-11
         downloads: 163
         description: 1h 12m live-coded session; the residual plot at 38:00 is the one referenced in the slides.
     assignments:
@@ -802,7 +827,7 @@ courses:
         module: sampling
         week: 1
         author: ibrahim
-        added: 2026-09-07
+        added: 2026-08-24
         downloads: 154
       - title: FFT worked examples
         type: note
@@ -811,7 +836,7 @@ courses:
         week: 4
         author: diallo
         tags: [exam-prep]
-        added: 2026-09-28
+        added: 2026-09-02
         downloads: 131
       - title: Lab 3 — Real-time equaliser on the TI board
         type: note
@@ -820,7 +845,7 @@ courses:
         week: 8
         author: diallo
         tags: [lab]
-        added: 2026-10-26
+        added: 2026-09-11
         downloads: 97
         description: Bring headphones. Fixed-point overflow is the failure mode you will hit first.
       - title: Filter design reference tables
@@ -829,7 +854,7 @@ courses:
         module: filters
         week: 8
         author: ibrahim
-        added: 2026-10-26
+        added: 2026-09-11
         downloads: 64
     assignments:
       - title: Lab 3 — Real-time equaliser

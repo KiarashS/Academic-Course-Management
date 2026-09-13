@@ -13,10 +13,8 @@ export function EmptyState({
   action?: ReactNode
 }) {
   return (
-    <div className="empty">
-      <span className="empty__icon">
-        <Icon name={icon} size={20} />
-      </span>
+    <div className="empty-state">
+      <Icon name={icon} size={28} />
       <h3>{title}</h3>
       {description && <p>{description}</p>}
       {action}

@@ -1,32 +1,27 @@
-import { useMemo, useState } from 'react'
-import type { Material, MaterialType } from '../types'
-import { useData } from '../store/DataProvider'
-import { useSession } from '../store/session'
-import { useToast } from '../store/ToastProvider'
+import { useMemo } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import type { MaterialType } from '../types'
+import { data } from '../content'
 import { formatBytes, pluralize } from '../lib/format'
-import { Button } from '../components/ui/Button'
-import { Icon } from '../components/ui/Icon'
-import { EmptyState } from '../components/ui/EmptyState'
-import { ConfirmDialog } from '../components/ui/Modal'
+import { MATERIAL_TYPES } from '../lib/contentTypes'
 import { MaterialRow } from '../components/materials/MaterialRow'
-import { MaterialForm, MATERIAL_TYPES } from '../components/materials/MaterialForm'
-
-type Sort = 'recent' | 'downloads' | 'title' | 'size'
+import { EmptyState } from '../components/ui/EmptyState'
+import { Icon } from '../components/ui/Icon'
 
 export function Materials() {
-  const store = useData()
-  const { data } = store
-  const { user, canManageContent } = useSession()
-  const { notify } = useToast()
+  const [params, setParams] = useSearchParams()
+  const query = params.get('q') ?? ''
+  const type = (params.get('type') as MaterialType | null) ?? ''
+  const courseId = params.get('course') ?? ''
+  const tagId = params.get('tag') ?? ''
+  const sort = params.get('sort') ?? 'recent'
 
-  const [query, setQuery] = useState('')
-  const [type, setType] = useState<MaterialType | ''>('')
-  const [courseId, setCourseId] = useState('')
-  const [tagId, setTagId] = useState('')
-  const [sort, setSort] = useState<Sort>('recent')
-  const [onlyMine, setOnlyMine] = useState(false)
-  const [form, setForm] = useState<{ open: boolean; material?: Material }>({ open: false })
-  const [confirm, setConfirm] = useState<Material | null>(null)
+  const setParam = (key: string, value: string) => {
+    const next = new URLSearchParams(params)
+    if (value) next.set(key, value)
+    else next.delete(key)
+    setParams(next, { replace: true })
+  }
 
   const materials = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -34,208 +29,130 @@ export function Materials() {
       if (type && material.type !== type) return false
       if (courseId && material.courseId !== courseId) return false
       if (tagId && !material.tagIds.includes(tagId)) return false
-      if (onlyMine && material.authorId !== user.id) return false
       if (!needle) return true
       return `${material.title} ${material.description ?? ''}`.toLowerCase().includes(needle)
     })
     const sorted = [...filtered]
-    switch (sort) {
-      case 'downloads':
-        sorted.sort((a, b) => b.downloads - a.downloads)
-        break
-      case 'title':
-        sorted.sort((a, b) => a.title.localeCompare(b.title))
-        break
-      case 'size':
-        sorted.sort((a, b) => b.sizeBytes - a.sizeBytes)
-        break
-      default:
-        sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    }
+    if (sort === 'title') sorted.sort((a, b) => a.title.localeCompare(b.title))
+    else if (sort === 'size') sorted.sort((a, b) => b.sizeBytes - a.sizeBytes)
+    else if (sort === 'downloads') sorted.sort((a, b) => b.downloads - a.downloads)
+    else sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     return sorted
-  }, [data.materials, query, type, courseId, tagId, sort, onlyMine, user.id])
+  }, [query, type, courseId, tagId, sort])
+
+  const counts = MATERIAL_TYPES.map((item) => ({
+    ...item,
+    count: data.materials.filter((m) => m.type === item.value).length,
+  })).filter((item) => item.count > 0)
 
   const totalSize = materials.reduce((sum, m) => sum + m.sizeBytes, 0)
-  const byType = MATERIAL_TYPES.map((t) => ({
-    ...t,
-    count: data.materials.filter((m) => m.type === t.value).length,
-  })).filter((t) => t.count > 0)
 
   return (
-    <div className="page">
-      <header className="page-header">
+    <div className="d-container">
+      <div className="page-title">
         <div>
-          <p className="page-header__eyebrow">Library</p>
           <h1>Materials</h1>
           <p>
-            Every slide deck, e-book, recording, dataset, and link across the department, searchable
-            in one place.
+            Every slide deck, reading, recording, dataset, and link across all courses, in one
+            searchable list.
           </p>
         </div>
-        <div className="page-header__actions">
-          <Button variant="primary" icon="plus" onClick={() => setForm({ open: true })}>
-            Add material
-          </Button>
-        </div>
-      </header>
+      </div>
 
-      <section className="type-strip">
-        <button className={`type-chip${type === '' ? ' is-selected' : ''}`} onClick={() => setType('')}>
-          <Icon name="grid" size={15} />
-          All
-          <span>{data.materials.length}</span>
-        </button>
-        {byType.map((item) => (
-          <button
-            key={item.value}
-            className={`type-chip${type === item.value ? ' is-selected' : ''}`}
-            onClick={() => setType(type === item.value ? '' : item.value)}
-          >
-            <Icon name={item.icon} size={15} />
-            {item.label}
-            <span>{item.count}</span>
-          </button>
+      <ul className="nav-pills">
+        <li>
+          <Link to="/materials" className={!type ? 'is-active' : undefined}>
+            All
+            <span className="nav-pills__count">{data.materials.length}</span>
+          </Link>
+        </li>
+        {counts.map((item) => (
+          <li key={item.value}>
+            <Link
+              to={`/materials?type=${item.value}`}
+              className={type === item.value ? 'is-active' : undefined}
+            >
+              <Icon name={item.icon} size={14} />
+              {item.plural}
+              <span className="nav-pills__count">{item.count}</span>
+            </Link>
+          </li>
         ))}
-      </section>
+      </ul>
 
-      <section className="filter-bar card">
-        <div className="filter-bar__search">
+      <div className="filter-bar">
+        <div className="search-field">
           <Icon name="search" size={16} />
           <input
-            className="filter-bar__input"
-            placeholder="Search titles and descriptions…"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search titles and descriptions…"
+            onChange={(event) => setParam('q', event.target.value)}
           />
         </div>
-        <div className="filter-bar__controls">
-          <select
-            className="select"
-            value={courseId}
-            aria-label="Course"
-            onChange={(event) => setCourseId(event.target.value)}
-          >
-            <option value="">All courses</option>
-            {data.courses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.code} — {course.title}
-              </option>
-            ))}
-          </select>
-          <select
-            className="select"
-            value={tagId}
-            aria-label="Tag"
-            onChange={(event) => setTagId(event.target.value)}
-          >
-            <option value="">All tags</option>
-            {data.tags.map((tag) => (
-              <option key={tag.id} value={tag.id}>
-                {tag.name}
-              </option>
-            ))}
-          </select>
-          <select
-            className="select"
-            value={sort}
-            aria-label="Sort by"
-            onChange={(event) => setSort(event.target.value as Sort)}
-          >
-            <option value="recent">Newest first</option>
-            <option value="downloads">Most downloaded</option>
-            <option value="title">Title A–Z</option>
-            <option value="size">Largest file</option>
-          </select>
-          <Button
-            onClick={() => setOnlyMine((value) => !value)}
-            aria-pressed={onlyMine}
-            variant={onlyMine ? 'primary' : 'secondary'}
-            icon="people"
-          >
-            Uploaded by me
-          </Button>
-        </div>
-      </section>
-
-      <div className="row row--between">
-        <p className="muted-text">
-          {pluralize(materials.length, 'item')}
-          {totalSize > 0 && ` · ${formatBytes(totalSize)} total`}
-        </p>
+        <select
+          className="d-input"
+          value={courseId}
+          aria-label="Course"
+          onChange={(event) => setParam('course', event.target.value)}
+        >
+          <option value="">All courses</option>
+          {data.courses.map((course) => (
+            <option key={course.id} value={course.id}>
+              {course.code} — {course.title}
+            </option>
+          ))}
+        </select>
+        <select
+          className="d-input"
+          value={tagId}
+          aria-label="Tag"
+          onChange={(event) => setParam('tag', event.target.value)}
+        >
+          <option value="">All tags</option>
+          {data.tags.map((tag) => (
+            <option key={tag.id} value={tag.id}>
+              {tag.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className="d-input"
+          value={sort}
+          aria-label="Sort by"
+          onChange={(event) => setParam('sort', event.target.value)}
+        >
+          <option value="recent">Newest</option>
+          <option value="title">Title</option>
+          <option value="size">Largest</option>
+          <option value="downloads">Most downloaded</option>
+        </select>
       </div>
+
+      <p className="muted">
+        {pluralize(materials.length, 'item')}
+        {totalSize > 0 && ` · ${formatBytes(totalSize)}`}
+      </p>
 
       {materials.length === 0 ? (
         <EmptyState
           icon="materials"
-          title="Nothing here"
-          description="No material matches the current filters."
+          title="Nothing matches"
+          description="Try a different type, course, or search term."
           action={
-            <Button
-              onClick={() => {
-                setQuery('')
-                setType('')
-                setCourseId('')
-                setTagId('')
-                setOnlyMine(false)
-              }}
-            >
+            <Link className="btn" to="/materials">
               Clear filters
-            </Button>
+            </Link>
           }
         />
       ) : (
-        <div className="stack--tight">
-          {materials.map((material) => {
-            const course = data.courses.find((c) => c.id === material.courseId)
-            return (
-              <MaterialRow
-                key={material.id}
-                material={material}
-                showCourse
-                canManage={course ? canManageContent(course) : false}
-                onEdit={() => setForm({ open: true, material })}
-                onToggleVisibility={() => {
-                  store.updateMaterial(material.id, { visible: !material.visible })
-                  notify(material.visible ? 'Hidden from students.' : 'Now visible to students.', 'info')
-                }}
-                onDelete={() => setConfirm(material)}
-              />
-            )
-          })}
-        </div>
+        <section className="panel">
+          <ul className="material-list">
+            {materials.map((material) => (
+              <MaterialRow key={material.id} material={material} showCourse />
+            ))}
+          </ul>
+        </section>
       )}
-
-      {form.open && (
-        <MaterialForm
-          open
-          authorId={user.id}
-          material={form.material}
-          onClose={() => setForm({ open: false })}
-          onSubmit={(values) => {
-            if (form.material) {
-              store.updateMaterial(form.material.id, values)
-              notify('Material updated.')
-            } else {
-              store.addMaterial(values)
-              notify('Material added.')
-            }
-            setForm({ open: false })
-          }}
-        />
-      )}
-
-      <ConfirmDialog
-        open={confirm !== null}
-        title={`Delete “${confirm?.title ?? ''}”?`}
-        message="The entry is removed from the library. The linked file itself is untouched."
-        onConfirm={() => {
-          if (confirm) {
-            store.deleteMaterial(confirm.id)
-            notify('Material deleted.', 'error')
-          }
-        }}
-        onClose={() => setConfirm(null)}
-      />
     </div>
   )
 }

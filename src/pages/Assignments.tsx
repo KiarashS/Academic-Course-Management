@@ -1,136 +1,98 @@
-import { useMemo, useState } from 'react'
-import type { Assignment, AssignmentType } from '../types'
-import { useData } from '../store/DataProvider'
-import { useSession } from '../store/session'
-import { useToast } from '../store/ToastProvider'
+import { useMemo } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { data } from '../content'
 import { pluralize } from '../lib/format'
-import { Button } from '../components/ui/Button'
-import { Icon } from '../components/ui/Icon'
-import { EmptyState } from '../components/ui/EmptyState'
-import { ConfirmDialog } from '../components/ui/Modal'
+import { ASSIGNMENT_TYPES } from '../lib/contentTypes'
 import { AssignmentRow } from '../components/assignments/AssignmentRow'
-import { AssignmentForm, ASSIGNMENT_TYPES } from '../components/assignments/AssignmentForm'
+import { EmptyState } from '../components/ui/EmptyState'
 
-type Window = 'upcoming' | 'week' | 'past' | 'drafts' | 'all'
+type Window = 'upcoming' | 'week' | 'closed' | 'all'
 
 const WINDOWS: { id: Window; label: string }[] = [
   { id: 'upcoming', label: 'Upcoming' },
   { id: 'week', label: 'Next 7 days' },
-  { id: 'past', label: 'Closed' },
-  { id: 'drafts', label: 'Drafts' },
+  { id: 'closed', label: 'Closed' },
   { id: 'all', label: 'Everything' },
 ]
 
 export function Assignments() {
-  const store = useData()
-  const { data } = store
-  const { user, canManageContent, myCourses } = useSession()
-  const { notify } = useToast()
+  const [params, setParams] = useSearchParams()
+  const window = (params.get('when') as Window) ?? 'upcoming'
+  const type = params.get('type') ?? ''
+  const courseId = params.get('course') ?? ''
 
-  const [window, setWindow] = useState<Window>('upcoming')
-  const [type, setType] = useState<AssignmentType | ''>('')
-  const [courseId, setCourseId] = useState('')
-  const [onlyMine, setOnlyMine] = useState(false)
-  const [form, setForm] = useState<{ open: boolean; assignment?: Assignment }>({ open: false })
-  const [confirm, setConfirm] = useState<Assignment | null>(null)
+  const setParam = (key: string, value: string) => {
+    const next = new URLSearchParams(params)
+    if (value) next.set(key, value)
+    else next.delete(key)
+    setParams(next, { replace: true })
+  }
 
   const assignments = useMemo(() => {
     const nowMs = Date.now()
     const weekMs = nowMs + 7 * 86_400_000
-    const myCourseIds = myCourses.map((c) => c.id)
     const filtered = data.assignments.filter((assignment) => {
-      const due = new Date(assignment.dueDate).getTime()
       if (type && assignment.type !== type) return false
       if (courseId && assignment.courseId !== courseId) return false
-      if (onlyMine && !myCourseIds.includes(assignment.courseId)) return false
-      switch (window) {
-        case 'upcoming':
-          return assignment.published && due >= nowMs
-        case 'week':
-          return assignment.published && due >= nowMs && due <= weekMs
-        case 'past':
-          return assignment.published && due < nowMs
-        case 'drafts':
-          return !assignment.published
-        default:
-          return true
-      }
+      const due = new Date(assignment.dueDate).getTime()
+      if (window === 'upcoming') return due >= nowMs
+      if (window === 'week') return due >= nowMs && due <= weekMs
+      if (window === 'closed') return due < nowMs
+      return true
     })
     return filtered.sort((a, b) =>
-      window === 'past' ? b.dueDate.localeCompare(a.dueDate) : a.dueDate.localeCompare(b.dueDate),
+      window === 'closed' ? b.dueDate.localeCompare(a.dueDate) : a.dueDate.localeCompare(b.dueDate),
     )
-  }, [data.assignments, window, type, courseId, onlyMine, myCourses])
+  }, [window, type, courseId])
 
   const stats = useMemo(() => {
     const nowMs = Date.now()
+    const published = data.assignments
     return {
-      open: data.assignments.filter((a) => a.published && new Date(a.dueDate).getTime() >= nowMs)
-        .length,
-      grading: data.assignments.reduce((sum, a) => sum + (a.submissions - a.graded), 0),
-      drafts: data.assignments.filter((a) => !a.published).length,
-      thisWeek: data.assignments.filter((a) => {
+      open: published.filter((a) => new Date(a.dueDate).getTime() >= nowMs).length,
+      week: published.filter((a) => {
         const due = new Date(a.dueDate).getTime()
-        return a.published && due >= nowMs && due <= nowMs + 7 * 86_400_000
+        return due >= nowMs && due <= nowMs + 7 * 86_400_000
       }).length,
+      total: published.length,
     }
-  }, [data.assignments])
+  }, [])
 
   return (
-    <div className="page">
-      <header className="page-header">
+    <div className="d-container">
+      <div className="page-title">
         <div>
-          <p className="page-header__eyebrow">Coursework</p>
-          <h1>Assignments</h1>
-          <p>Homework, labs, quizzes, projects, and exams across every course, on one timeline.</p>
+          <h1>Coursework</h1>
+          <p>
+            Homework, labs, quizzes, projects, and exams across every course, on one timeline.
+            Deadlines are shown in your own time zone.
+          </p>
         </div>
-        <div className="page-header__actions">
-          <Button variant="primary" icon="plus" onClick={() => setForm({ open: true })}>
-            New assignment
-          </Button>
-        </div>
-      </header>
+      </div>
 
-      <section className="grid grid--stats">
-        <div className="stat">
-          <span className="stat__label">Open now</span>
-          <span className="stat__value">{stats.open}</span>
-          <span className="stat__hint">Published with a future deadline</span>
-        </div>
-        <div className="stat">
-          <span className="stat__label">Due this week</span>
-          <span className="stat__value">{stats.thisWeek}</span>
-          <span className="stat__hint">Within the next seven days</span>
-        </div>
-        <div className="stat">
-          <span className="stat__label">Awaiting grading</span>
-          <span className="stat__value">{stats.grading}</span>
-          <span className="stat__hint">Submitted but not marked</span>
-        </div>
-        <div className="stat">
-          <span className="stat__label">Drafts</span>
-          <span className="stat__value">{stats.drafts}</span>
-          <span className="stat__hint">Not yet visible to students</span>
-        </div>
-      </section>
-
-      <section className="filter-bar card">
-        <div className="segmented" role="group" aria-label="Time window">
+      <div className="d-row d-row--between">
+        <ul className="nav-pills">
           {WINDOWS.map((item) => (
-            <button
-              key={item.id}
-              aria-pressed={window === item.id}
-              onClick={() => setWindow(item.id)}
-            >
-              {item.label}
-            </button>
+            <li key={item.id}>
+              <button
+                className={window === item.id ? 'is-active' : undefined}
+                onClick={() => setParam('when', item.id === 'upcoming' ? '' : item.id)}
+              >
+                {item.label}
+                {item.id === 'upcoming' && <span className="nav-pills__count">{stats.open}</span>}
+                {item.id === 'week' && <span className="nav-pills__count">{stats.week}</span>}
+                {item.id === 'all' && <span className="nav-pills__count">{stats.total}</span>}
+              </button>
+            </li>
           ))}
-        </div>
-        <div className="filter-bar__controls">
+        </ul>
+
+        <div className="d-row">
           <select
-            className="select"
+            className="d-input"
             value={type}
-            aria-label="Assignment type"
-            onChange={(event) => setType(event.target.value as AssignmentType | '')}
+            aria-label="Type"
+            onChange={(event) => setParam('type', event.target.value)}
           >
             <option value="">All types</option>
             {ASSIGNMENT_TYPES.map((item) => (
@@ -140,96 +102,43 @@ export function Assignments() {
             ))}
           </select>
           <select
-            className="select"
+            className="d-input"
             value={courseId}
             aria-label="Course"
-            onChange={(event) => setCourseId(event.target.value)}
+            onChange={(event) => setParam('course', event.target.value)}
           >
             <option value="">All courses</option>
             {data.courses.map((course) => (
               <option key={course.id} value={course.id}>
-                {course.code} — {course.title}
+                {course.code}
               </option>
             ))}
           </select>
-          <Button
-            onClick={() => setOnlyMine((value) => !value)}
-            aria-pressed={onlyMine}
-            variant={onlyMine ? 'primary' : 'secondary'}
-            icon="award"
-          >
-            My courses
-          </Button>
         </div>
-      </section>
+      </div>
 
-      <p className="muted-text">{pluralize(assignments.length, 'assignment')}</p>
+      <p className="muted">{pluralize(assignments.length, 'item')}</p>
 
       {assignments.length === 0 ? (
         <EmptyState
           icon="assignments"
           title="Nothing in this window"
-          description="Switch to another tab or clear the course filter."
-          action={<Button onClick={() => setWindow('all')}>Show everything</Button>}
+          description="Switch tabs or clear the course filter."
+          action={
+            <Link className="btn" to="/assignments?when=all">
+              Show everything
+            </Link>
+          }
         />
       ) : (
-        <div className="stack--tight">
-          {assignments.map((assignment) => {
-            const course = data.courses.find((c) => c.id === assignment.courseId)
-            return (
-              <AssignmentRow
-                key={assignment.id}
-                assignment={assignment}
-                showCourse
-                canManage={course ? canManageContent(course) : false}
-                onEdit={() => setForm({ open: true, assignment })}
-                onTogglePublished={() => {
-                  store.updateAssignment(assignment.id, { published: !assignment.published })
-                  notify(assignment.published ? 'Unpublished.' : 'Published to students.', 'info')
-                }}
-                onDelete={() => setConfirm(assignment)}
-              />
-            )
-          })}
-        </div>
+        <section className="panel">
+          <ul className="material-list">
+            {assignments.map((assignment) => (
+              <AssignmentRow key={assignment.id} assignment={assignment} showCourse />
+            ))}
+          </ul>
+        </section>
       )}
-
-      {form.open && (
-        <AssignmentForm
-          open
-          authorId={user.id}
-          assignment={form.assignment}
-          onClose={() => setForm({ open: false })}
-          onSubmit={(values) => {
-            if (form.assignment) {
-              store.updateAssignment(form.assignment.id, values)
-              notify('Assignment updated.')
-            } else {
-              store.addAssignment(values)
-              notify('Assignment created.')
-            }
-            setForm({ open: false })
-          }}
-        />
-      )}
-
-      <ConfirmDialog
-        open={confirm !== null}
-        title={`Delete “${confirm?.title ?? ''}”?`}
-        message="Submission and grading counts for this assignment go with it."
-        onConfirm={() => {
-          if (confirm) {
-            store.deleteAssignment(confirm.id)
-            notify('Assignment deleted.', 'error')
-          }
-        }}
-        onClose={() => setConfirm(null)}
-      />
-
-      <p className="muted-text" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <Icon name="alert" size={13} />
-        Deadlines use your local time zone.
-      </p>
     </div>
   )
 }

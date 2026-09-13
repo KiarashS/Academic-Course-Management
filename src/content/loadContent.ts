@@ -170,9 +170,38 @@ export interface LoadedContent {
   fingerprint: string
   /** Files referenced by the YAML that are not present under public/courses. */
   missingFiles: string[]
+  /** Courses marked `status: draft`, which are withheld from the site. */
+  draftCount: number
+}
+
+/**
+ * `{ id: a, summary: One, two }` is a YAML flow mapping, so the comma ends the
+ * value and "two" silently becomes an empty key. The mistake is easy to make
+ * and impossible to see in the output, so it is caught here by name.
+ */
+function rejectSplitValues(node: unknown, where: string): void {
+  if (Array.isArray(node)) {
+    node.forEach((item, index) => rejectSplitValues(item, `${where}[${index}]`))
+    return
+  }
+  if (!node || typeof node !== 'object') return
+  for (const [key, value] of Object.entries(node)) {
+    if (value === null && /\s/.test(key)) {
+      throw new ContentError(
+        `${where}: "${key}" is being read as an empty setting, not as text. ` +
+          'This happens when a { … } line holds a value containing a comma — ' +
+          'write that entry over several lines instead, or quote the value.',
+      )
+    }
+    rejectSplitValues(value, `${where}.${key}`)
+  }
 }
 
 export function buildContent(raw: RawContent): LoadedContent {
+  rejectSplitValues(raw, 'content')
+
+  const nowIso = new Date().toISOString()
+
   const semesters: Semester[] = (raw.semesters ?? []).map((item, index) => {
     if (!item.id) throw new ContentError(`semesters[${index}]: an id is required.`)
     return {
@@ -274,6 +303,10 @@ export function buildContent(raw: RawContent): LoadedContent {
     }
 
     let newest = created
+    /** Only timestamps that have already passed count as "last updated". */
+    const noteActivity = (at: string) => {
+      if (at > newest && at <= nowIso) newest = at
+    }
     const usedIds = new Set<string>()
     const uniqueId = (prefix: string, title: string) => {
       const base = `${raw_.id}--${slugify(title) || prefix}`
@@ -303,7 +336,7 @@ export function buildContent(raw: RawContent): LoadedContent {
       }
 
       const added = parseDate(material.added, at, created)
-      if (added > newest) newest = added
+      noteActivity(added)
       materials.push({
         id: uniqueId('material', material.title),
         courseId: raw_.id,
@@ -334,7 +367,7 @@ export function buildContent(raw: RawContent): LoadedContent {
       const due = parseDate(assignment.due, `${at} due`)
       if (due <= released)
         throw new ContentError(`${at}: "due" (${assignment.due}) must come after "released".`)
-      if (due > newest) newest = due
+      noteActivity(released)
       assignments.push({
         id: uniqueId('assignment', assignment.title),
         courseId: raw_.id,
@@ -370,7 +403,7 @@ export function buildContent(raw: RawContent): LoadedContent {
     for (const announcement of raw_.announcements ?? []) {
       const at = `${where} announcement "${announcement.title}"`
       const date = parseDate(announcement.date, at, created)
-      if (date > newest) newest = date
+      noteActivity(date)
       announcements.push({
         id: uniqueId('announcement', announcement.title),
         courseId: raw_.id,
@@ -420,19 +453,37 @@ export function buildContent(raw: RawContent): LoadedContent {
       objectives: raw_.objectives ?? [],
       gradingScheme: raw_.grading ?? [],
       createdAt: created,
-      updatedAt: parseDate(raw_.updated, where, newest),
+      updatedAt: raw_.updated ? parseDate(raw_.updated, where) : newest,
       archivedAt: raw_.archived ? parseDate(raw_.archived, `${where} archived`) : undefined,
     })
   }
 
+  // A draft is content that is not ready to be seen. The site is public and has
+  // no sign-in, so drafts are withheld altogether rather than merely flagged.
+  const drafts = new Set(courses.filter((c) => c.status === 'draft').map((c) => c.id))
+  const published = courses.filter((c) => !drafts.has(c.id))
+  const keep = <T extends { courseId: string }>(items: T[]) =>
+    items.filter((item) => !drafts.has(item.courseId))
+
   return {
-    data: { people, semesters, categories, tags, courses, modules, materials, assignments, announcements },
+    data: {
+      people,
+      semesters,
+      categories,
+      tags,
+      courses: published,
+      modules: keep(modules),
+      materials: keep(materials),
+      assignments: keep(assignments).filter((a) => a.published),
+      announcements: keep(announcements),
+    },
     site: {
       name: raw.site?.name ?? 'Course Hub',
       tagline: raw.site?.tagline ?? 'Course workspace',
     },
     fingerprint: fingerprint(raw),
     missingFiles: [...new Set(missingFiles)].sort(),
+    draftCount: drafts.size,
   }
 }
 
@@ -451,6 +502,7 @@ const EMPTY: LoadedContent = {
   site: { name: 'Course Hub', tagline: 'Course workspace' },
   fingerprint: 'invalid',
   missingFiles: [],
+  draftCount: 0,
 }
 
 /**

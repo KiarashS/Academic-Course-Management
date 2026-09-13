@@ -43,7 +43,29 @@ can see; Settings turns that draft back into this file.
 
 A course with `status: archived` lands on the Archive page and keeps its
 materials searchable from the library. Leave `status` off for a course that is
-running now; use `draft` for one that is not ready to show.
+running now.
+
+`status: draft` withholds a course from the site completely, along with its
+materials and coursework — the site is public and has no sign-in, so there is
+nowhere to hide a half-finished course. Use it to stage something you are still
+writing.
+
+## One YAML trap worth knowing
+
+A `{ … }` entry is a flow mapping, so a comma inside a value ends it:
+
+```yaml
+# Wrong — everything after the first comma is silently dropped
+- { id: memory, title: Virtual memory, summary: Paging, TLBs, and page replacement. }
+
+# Right
+- id: memory
+  title: Virtual memory
+  summary: Paging, TLBs, and page replacement.
+```
+
+The site refuses to load rather than publish the truncated text, and the error
+names the entry, so this is caught rather than shipped.
 
 ## Files
 
@@ -165,8 +187,7 @@ a URL), `allowLate`, `published`, `submissions`, `graded`.
 Written as `YYYY-MM-DD` or `YYYY-MM-DD HH:mm` and read in the reader's own time
 zone, so a deadline of `23:59` means 23:59 locally rather than in UTC.
 
-## Going the other way
+## Editing
 
-Settings → Publishing → **Download YAML** writes the current workspace, local
-edits included, back out in this format. That is the way to use the in-app forms
-as an editor: add the course in the browser, export, replace this file, redeploy.
+There is no way back: the site is read-only by design, so this file is the only
+place content is written. Nothing you do in the browser changes it.

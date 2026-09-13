@@ -1,18 +1,30 @@
-/* Design tokens. Light is the base; the dark block redefines only colours. */
+/*
+ * Colour and spacing scale modelled on Discourse's default schemes: a small set
+ * of semantic base colours (primary = text, secondary = background, tertiary =
+ * links and accents) with the in-between shades derived from them, exactly the
+ * way Discourse builds --primary-low, --primary-medium and so on.
+ */
 :root {
-  /* Inter when the reader already has it, native UI font otherwise. No web fetch. */
-  --font-sans: 'Inter', 'Inter var', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
-    Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 
-  --text-xs: 0.75rem;
-  --text-sm: 0.8125rem;
-  --text-base: 0.875rem;
-  --text-md: 0.9375rem;
-  --text-lg: 1.0625rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 1.875rem;
+  /* Discourse sets the root to 15px and scales everything from it. */
+  --font-down-2: 0.7333em;
+  --font-down-1: 0.8667em;
+  --font-up-1: 1.1333em;
+  --font-up-2: 1.2667em;
+  --font-up-3: 1.5111em;
+  --font-up-4: 1.7511em;
+  --font-up-5: 2.0222em;
+
+  --d-max-width: 1110px;
+  --d-header-height: 54px;
+  --d-sidebar-width: 244px;
+  --d-nav-height: 44px;
+  --d-border-radius: 4px;
+  --d-input-border-radius: 4px;
+  --d-button-border-radius: 4px;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -22,99 +34,93 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
   --space-10: 2.5rem;
-  --space-12: 3rem;
-
-  --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-  --radius-full: 999px;
-
-  --sidebar-width: 248px;
-  --sidebar-width-collapsed: 68px;
-  --topbar-height: 60px;
-  --content-max: 1320px;
 
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --transition: 160ms var(--ease);
+  --transition: 120ms var(--ease);
 
-  /* Light palette */
-  --bg: #f6f7f9;
-  --bg-elevated: #ffffff;
-  --bg-sunken: #eef0f4;
-  --bg-hover: rgba(15, 23, 42, 0.04);
-  --bg-active: rgba(99, 102, 241, 0.1);
-  --surface-glass: rgba(255, 255, 255, 0.82);
+  /* Light scheme */
+  --primary: #222222;
+  --primary-very-high: #2f2f2f;
+  --primary-high: #454545;
+  --primary-medium: #646464;
+  --primary-low-mid: #a0a0a0;
+  --primary-low: #e9e9e9;
+  --primary-very-low: #f8f8f8;
 
-  --border: #e3e6ec;
-  --border-strong: #cdd2dc;
+  --secondary: #ffffff;
+  --secondary-low: #4d4d4d;
+  --secondary-medium: #8c8c8c;
+  --secondary-high: #666666;
 
-  --fg: #10172a;
-  --fg-muted: #5b6579;
-  --fg-subtle: #8891a3;
-  --fg-inverse: #ffffff;
+  --tertiary: #0088cc;
+  --tertiary-hover: #0077b3;
+  --tertiary-medium: #4ba5dd;
+  --tertiary-low: #d1f0ff;
+  --tertiary-very-low: #eaf8ff;
 
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-soft: rgba(79, 70, 229, 0.1);
-  --accent-border: rgba(79, 70, 229, 0.28);
+  --quaternary: #e45735;
+  --highlight: #ffff4d;
+  --highlight-low: #ffffcc;
+  --highlight-medium: #fdfcc4;
 
-  --success: #0f8a5f;
-  --success-soft: rgba(15, 138, 95, 0.12);
-  --warning: #b45309;
-  --warning-soft: rgba(180, 83, 9, 0.12);
-  --danger: #cd2b31;
-  --danger-soft: rgba(205, 43, 49, 0.1);
-  --info: #0369a1;
-  --info-soft: rgba(3, 105, 161, 0.1);
+  --danger: #e45735;
+  --danger-low: #fbe9e5;
+  --danger-hover: #bf3c1c;
+  --success: #009900;
+  --success-low: #e2f0e2;
+  --love: #fa6c8d;
 
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow: 0 4px 16px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05);
-  --shadow-lg: 0 18px 48px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.06);
-  --ring: 0 0 0 3px rgba(79, 70, 229, 0.28);
+  --header-background: #ffffff;
+  --header-primary: #333333;
+  --header-border: rgba(0, 0, 0, 0.08);
+  --header-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.12);
+
+  --hover: #f2f2f2;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-dropdown: 0 2px 12px rgba(0, 0, 0, 0.14);
+  --shadow-modal: 0 8px 40px rgba(0, 0, 0, 0.25);
+  --focus-ring: 0 0 0 2px var(--tertiary-low), 0 0 0 4px var(--tertiary);
 }
 
 :root[data-theme='dark'] {
-  --bg: #0b0e14;
-  --bg-elevated: #141922;
-  --bg-sunken: #0f131b;
-  --bg-hover: rgba(255, 255, 255, 0.05);
-  --bg-active: rgba(129, 140, 248, 0.14);
-  --surface-glass: rgba(20, 25, 34, 0.84);
+  --primary: #dddddd;
+  --primary-very-high: #cfcfcf;
+  --primary-high: #b8b8b8;
+  --primary-medium: #989898;
+  --primary-low-mid: #6f6f6f;
+  --primary-low: #333333;
+  --primary-very-low: #1d1d1d;
 
-  --border: #242b38;
-  --border-strong: #333c4d;
+  --secondary: #111111;
+  --secondary-low: #c4c4c4;
+  --secondary-medium: #8c8c8c;
+  --secondary-high: #9a9a9a;
 
-  --fg: #e9edf5;
-  --fg-muted: #98a3b8;
-  --fg-subtle: #6b7689;
-  --fg-inverse: #0b0e14;
+  --tertiary: #52a2c9;
+  --tertiary-hover: #6fb6d8;
+  --tertiary-medium: #3f7f9d;
+  --tertiary-low: #1b3a49;
+  --tertiary-very-low: #162b36;
 
-  --accent: #818cf8;
-  --accent-hover: #a5b4fc;
-  --accent-soft: rgba(129, 140, 248, 0.16);
-  --accent-border: rgba(129, 140, 248, 0.38);
+  --quaternary: #ef6c4b;
+  --highlight: #786e35;
+  --highlight-low: #2e2a17;
+  --highlight-medium: #3d3720;
 
-  --success: #34d399;
-  --success-soft: rgba(52, 211, 153, 0.14);
-  --warning: #fbbf24;
-  --warning-soft: rgba(251, 191, 36, 0.14);
-  --danger: #f87171;
-  --danger-soft: rgba(248, 113, 113, 0.14);
-  --info: #38bdf8;
-  --info-soft: rgba(56, 189, 248, 0.14);
+  --danger: #ef6c4b;
+  --danger-low: #3a201a;
+  --danger-hover: #f5866a;
+  --success: #4cc14c;
+  --success-low: #16301a;
+  --love: #fa6c8d;
 
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
-  --shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
-  --ring: 0 0 0 3px rgba(129, 140, 248, 0.35);
-}
+  --header-background: #111111;
+  --header-primary: #dddddd;
+  --header-border: rgba(255, 255, 255, 0.1);
+  --header-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.5);
 
-:root[data-density='compact'] {
-  --space-4: 0.75rem;
-  --space-5: 1rem;
-  --space-6: 1.125rem;
-  --space-8: 1.5rem;
+  --hover: #1c1c1c;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-dropdown: 0 2px 12px rgba(0, 0, 0, 0.6);
+  --shadow-modal: 0 8px 40px rgba(0, 0, 0, 0.7);
 }

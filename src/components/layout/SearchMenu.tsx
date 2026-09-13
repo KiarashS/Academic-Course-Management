@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon, type IconName } from '../ui/Icon'
-import { useData } from '../../store/DataProvider'
+import { data } from '../../content'
 import { globalSearch, type SearchKind } from '../../lib/selectors'
 
 const KIND_ICON: Record<SearchKind, IconName> = {
@@ -11,25 +11,30 @@ const KIND_ICON: Record<SearchKind, IconName> = {
   person: 'people',
 }
 
-const QUICK_LINKS = [
-  { label: 'Go to dashboard', href: '/', icon: 'dashboard' as IconName },
-  { label: 'Browse all courses', href: '/courses', icon: 'courses' as IconName },
-  { label: 'Material library', href: '/materials', icon: 'materials' as IconName },
-  { label: 'Upcoming deadlines', href: '/assignments', icon: 'assignments' as IconName },
-  { label: 'Teaching calendar', href: '/calendar', icon: 'calendar' as IconName },
-  { label: 'Course archive', href: '/archive', icon: 'archive' as IconName },
+const QUICK_LINKS: { label: string; href: string; icon: IconName }[] = [
+  { label: 'All courses', href: '/', icon: 'courses' },
+  { label: 'Material library', href: '/materials', icon: 'materials' },
+  { label: 'Coursework and deadlines', href: '/assignments', icon: 'assignments' },
+  { label: 'Calendar', href: '/calendar', icon: 'calendar' },
+  { label: 'Categories', href: '/categories', icon: 'category' },
+  { label: 'Archive', href: '/archive', icon: 'archive' },
 ]
 
-/** Mounted only while open, so its query state resets on every launch. */
-export function CommandPalette({ onClose }: { onClose: () => void }) {
-  const { data } = useData()
+/** Mounted only while open, so the query resets on every launch. */
+export function SearchMenu({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [cursor, setCursor] = useState(0)
 
-  const results = useMemo(() => globalSearch(data, query, 12), [data, query])
+  const results = useMemo(() => globalSearch(data, query, 10), [query])
   const items = query.trim()
-    ? results.map((r) => ({ key: r.id, label: r.title, hint: r.subtitle, href: r.href, icon: KIND_ICON[r.kind] }))
+    ? results.map((r) => ({
+        key: r.kind + r.id,
+        label: r.title,
+        hint: r.subtitle,
+        href: r.href,
+        icon: KIND_ICON[r.kind],
+      }))
     : QUICK_LINKS.map((l) => ({ key: l.href, label: l.label, hint: '', href: l.href, icon: l.icon }))
 
   const go = (href: string) => {
@@ -39,19 +44,19 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="modal-backdrop palette-backdrop"
+      className="d-modal-backdrop"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
     >
-      <div className="palette" role="dialog" aria-modal="true" aria-label="Search">
-        <div className="palette__input">
+      <div className="search-menu" role="dialog" aria-modal="true" aria-label="Search">
+        <div className="search-menu__input">
           <Icon name="search" size={18} />
           {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
           <input
             autoFocus
             value={query}
-            placeholder="Search courses, materials, assignments, people…"
+            placeholder="Search courses, materials, coursework, people…"
             onChange={(event) => {
               setQuery(event.target.value)
               setCursor(0)
@@ -70,33 +75,34 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
               }
             }}
           />
-          <kbd>esc</kbd>
         </div>
 
-        <div className="palette__results">
+        <div className="search-menu__results">
           {items.length === 0 ? (
-            <p className="palette__empty">No matches for “{query}”.</p>
+            <p className="search-menu__empty">No results for “{query}”.</p>
           ) : (
             items.map((item, index) => (
               <button
                 key={item.key}
-                className={`palette__item${index === cursor ? ' is-active' : ''}`}
+                className={`search-menu__item${index === cursor ? ' is-active' : ''}`}
                 onMouseEnter={() => setCursor(index)}
                 onClick={() => go(item.href)}
               >
                 <Icon name={item.icon} size={16} />
-                <span className="palette__item-text">
+                <span className="search-menu__text">
                   <strong>{item.label}</strong>
                   {item.hint && <span>{item.hint}</span>}
                 </span>
-                <Icon name="chevronRight" size={14} />
               </button>
             ))
           )}
         </div>
 
         {query.trim() && (
-          <button className="palette__footer" onClick={() => go(`/search?q=${encodeURIComponent(query)}`)}>
+          <button
+            className="search-menu__footer"
+            onClick={() => go(`/search?q=${encodeURIComponent(query)}`)}
+          >
             See all results for “{query}”
           </button>
         )}

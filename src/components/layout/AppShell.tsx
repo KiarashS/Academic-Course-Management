@@ -1,33 +1,28 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
+import { Header } from './Header'
 import { Sidebar } from './Sidebar'
-import { Topbar } from './Topbar'
-import { CommandPalette } from './CommandPalette'
+import { SearchMenu } from './SearchMenu'
 import { ToastRegion } from './ToastRegion'
 import { usePreferences } from '../../store/PreferencesProvider'
-import { DraftBanner } from './DraftBanner'
 
 export function AppShell() {
   const { prefs, setPref } = usePreferences()
-  const [paletteOpen, setPaletteOpen] = useState(false)
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [mobileNav, setMobileNav] = useState(false)
   const location = useLocation()
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault()
-        setPaletteOpen((open) => !open)
-      }
-      // "/" focuses search, unless the user is already typing somewhere.
       const target = event.target as HTMLElement | null
       const typing =
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
         target?.isContentEditable
-      if (event.key === '/' && !typing) {
+      if (typing) return
+      if (event.key === '/' || ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k')) {
         event.preventDefault()
-        setPaletteOpen(true)
+        setSearchOpen(true)
       }
     }
     document.addEventListener('keydown', onKeyDown)
@@ -37,30 +32,33 @@ export function AppShell() {
   // Each route change starts at the top of the page.
   useEffect(() => {
     window.scrollTo({ top: 0 })
-  }, [location.pathname])
+  }, [location.pathname, location.search])
+
+  const isDesktop = () => window.matchMedia('(min-width: 769px)').matches
+  const sidebarState = mobileNav ? 'open' : prefs.sidebarOpen ? 'shown' : 'hidden'
 
   return (
-    <div className="app-shell" data-collapsed={prefs.sidebarCollapsed}>
+    <>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <Sidebar open={mobileNavOpen} onNavigate={() => setMobileNavOpen(false)} />
-      {mobileNavOpen && (
-        <div className="sidebar-scrim" onClick={() => setMobileNavOpen(false)} aria-hidden="true" />
-      )}
-      <div className="main">
-        <Topbar
-          onOpenSearch={() => setPaletteOpen(true)}
-          onToggleSidebar={() => setPref('sidebarCollapsed', !prefs.sidebarCollapsed)}
-          onOpenMobileNav={() => setMobileNavOpen(true)}
-        />
-        <DraftBanner />
-        <main id="main-content">
+      <Header
+        onOpenSearch={() => setSearchOpen(true)}
+        onToggleSidebar={() =>
+          isDesktop() ? setPref('sidebarOpen', !prefs.sidebarOpen) : setMobileNav((open) => !open)
+        }
+      />
+      <div className="d-shell" data-sidebar={sidebarState}>
+        <Sidebar onNavigate={() => setMobileNav(false)} />
+        {mobileNav && (
+          <div className="d-sidebar-scrim" onClick={() => setMobileNav(false)} aria-hidden="true" />
+        )}
+        <main className="d-main" id="main-content">
           <Outlet />
         </main>
       </div>
-      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+      {searchOpen && <SearchMenu onClose={() => setSearchOpen(false)} />}
       <ToastRegion />
-    </div>
+    </>
   )
 }
