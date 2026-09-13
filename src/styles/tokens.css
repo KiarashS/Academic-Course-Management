@@ -1,0 +1,120 @@
+/* Design tokens. Light is the base; the dark block redefines only colours. */
+:root {
+  /* Inter when the reader already has it, native UI font otherwise. No web fetch. */
+  --font-sans: 'Inter', 'Inter var', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 999px;
+
+  --sidebar-width: 248px;
+  --sidebar-width-collapsed: 68px;
+  --topbar-height: 60px;
+  --content-max: 1320px;
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: 160ms var(--ease);
+
+  /* Light palette */
+  --bg: #f6f7f9;
+  --bg-elevated: #ffffff;
+  --bg-sunken: #eef0f4;
+  --bg-hover: rgba(15, 23, 42, 0.04);
+  --bg-active: rgba(99, 102, 241, 0.1);
+  --surface-glass: rgba(255, 255, 255, 0.82);
+
+  --border: #e3e6ec;
+  --border-strong: #cdd2dc;
+
+  --fg: #10172a;
+  --fg-muted: #5b6579;
+  --fg-subtle: #8891a3;
+  --fg-inverse: #ffffff;
+
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: rgba(79, 70, 229, 0.1);
+  --accent-border: rgba(79, 70, 229, 0.28);
+
+  --success: #0f8a5f;
+  --success-soft: rgba(15, 138, 95, 0.12);
+  --warning: #b45309;
+  --warning-soft: rgba(180, 83, 9, 0.12);
+  --danger: #cd2b31;
+  --danger-soft: rgba(205, 43, 49, 0.1);
+  --info: #0369a1;
+  --info-soft: rgba(3, 105, 161, 0.1);
+
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow: 0 4px 16px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 18px 48px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.06);
+  --ring: 0 0 0 3px rgba(79, 70, 229, 0.28);
+}
+
+:root[data-theme='dark'] {
+  --bg: #0b0e14;
+  --bg-elevated: #141922;
+  --bg-sunken: #0f131b;
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-active: rgba(129, 140, 248, 0.14);
+  --surface-glass: rgba(20, 25, 34, 0.84);
+
+  --border: #242b38;
+  --border-strong: #333c4d;
+
+  --fg: #e9edf5;
+  --fg-muted: #98a3b8;
+  --fg-subtle: #6b7689;
+  --fg-inverse: #0b0e14;
+
+  --accent: #818cf8;
+  --accent-hover: #a5b4fc;
+  --accent-soft: rgba(129, 140, 248, 0.16);
+  --accent-border: rgba(129, 140, 248, 0.38);
+
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.14);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.14);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.14);
+  --info: #38bdf8;
+  --info-soft: rgba(56, 189, 248, 0.14);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
+  --ring: 0 0 0 3px rgba(129, 140, 248, 0.35);
+}
+
+:root[data-density='compact'] {
+  --space-4: 0.75rem;
+  --space-5: 1rem;
+  --space-6: 1.125rem;
+  --space-8: 1.5rem;
+}

@@ -1,0 +1,618 @@
+import type {
+  AppData,
+  Assignment,
+  Course,
+  Material,
+  Module,
+  Person,
+  Semester,
+  SemesterTerm,
+} from '../types'
+
+/**
+ * The demo data is anchored to whenever it is loaded: the current term opened
+ * twelve weeks before today, so past lecture material, live deadlines, and a
+ * populated calendar all fall out of the same offsets.
+ */
+const TERM_START = (() => {
+  const date = new Date()
+  date.setHours(0, 0, 0, 0)
+  date.setDate(date.getDate() - 84)
+  return date
+})()
+
+/** A date `offset` days into the current term (negative reaches earlier terms). */
+const termDay = (offset: number, hour = 12, minute = 0) => {
+  const date = new Date(TERM_START)
+  date.setDate(date.getDate() + offset)
+  date.setHours(hour, minute, 0, 0)
+  return date.toISOString()
+}
+
+const TERM_OF_MONTH: SemesterTerm[] = [
+  'Winter', 'Spring', 'Spring', 'Spring', 'Summer', 'Summer',
+  'Summer', 'Fall', 'Fall', 'Fall', 'Fall', 'Winter',
+]
+
+/** Days from today, used so demo deadlines always look live. */
+const fromNow = (days: number, hour = 23, minute = 59) => {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  date.setHours(hour, minute, 0, 0)
+  return date.toISOString()
+}
+
+const people: Person[] = [
+  {
+    id: 'p-nasseri',
+    name: 'Dr. Leila Nasseri',
+    email: 'l.nasseri@university.edu',
+    role: 'professor',
+    title: 'Associate Professor of Computer Engineering',
+    department: 'Computer Engineering',
+    office: 'Engineering Hall 412',
+    officeHours: 'Mon & Wed 14:00–16:00',
+    phone: '+1 (555) 014-2231',
+    bio: 'Works on distributed systems and consensus protocols. Runs the Systems Reading Group on Fridays.',
+    avatarColor: '#6366f1',
+    website: 'https://university.edu/~nasseri',
+  },
+  {
+    id: 'p-okonkwo',
+    name: 'Prof. Daniel Okonkwo',
+    email: 'd.okonkwo@university.edu',
+    role: 'professor',
+    title: 'Professor of Mathematics',
+    department: 'Mathematics',
+    office: 'Science Building 208',
+    officeHours: 'Tue 10:00–12:00',
+    bio: 'Numerical linear algebra, with a long detour through optimisation for machine learning.',
+    avatarColor: '#0ea5e9',
+  },
+  {
+    id: 'p-varga',
+    name: 'Dr. Anna Varga',
+    email: 'a.varga@university.edu',
+    role: 'professor',
+    title: 'Assistant Professor of Data Science',
+    department: 'Computer Engineering',
+    office: 'Engineering Hall 305',
+    officeHours: 'Thu 09:00–11:00',
+    bio: 'Statistical learning, causal inference, and far too many Jupyter notebooks.',
+    avatarColor: '#10b981',
+  },
+  {
+    id: 'p-ibrahim',
+    name: 'Dr. Samir Ibrahim',
+    email: 's.ibrahim@university.edu',
+    role: 'professor',
+    title: 'Professor of Electrical Engineering',
+    department: 'Electrical Engineering',
+    office: 'Tesla Lab 120',
+    officeHours: 'Wed 13:00–15:00',
+    avatarColor: '#f59e0b',
+  },
+  {
+    id: 'ta-mehta',
+    name: 'Riya Mehta',
+    email: 'r.mehta@university.edu',
+    role: 'ta',
+    title: 'Teaching Assistant · PhD candidate',
+    department: 'Computer Engineering',
+    office: 'Engineering Hall 118',
+    officeHours: 'Fri 15:00–17:00',
+    bio: 'Third-year PhD student. Maintains the autograder and the lab VMs.',
+    avatarColor: '#ec4899',
+  },
+  {
+    id: 'ta-lund',
+    name: 'Erik Lund',
+    email: 'e.lund@university.edu',
+    role: 'ta',
+    title: 'Teaching Assistant · MSc',
+    department: 'Mathematics',
+    officeHours: 'Tue 16:00–18:00',
+    avatarColor: '#8b5cf6',
+  },
+  {
+    id: 'ta-chen',
+    name: 'Wei Chen',
+    email: 'w.chen@university.edu',
+    role: 'ta',
+    title: 'Teaching Assistant · PhD candidate',
+    department: 'Computer Engineering',
+    officeHours: 'Mon 11:00–13:00',
+    avatarColor: '#14b8a6',
+  },
+  {
+    id: 'ta-diallo',
+    name: 'Aminata Diallo',
+    email: 'a.diallo@university.edu',
+    role: 'ta',
+    title: 'Teaching Assistant · MSc',
+    department: 'Electrical Engineering',
+    officeHours: 'Thu 14:00–16:00',
+    avatarColor: '#f43f5e',
+  },
+  {
+    id: 'st-koch',
+    name: 'Jonas Koch',
+    email: 'j.koch@student.university.edu',
+    role: 'student',
+    department: 'Computer Engineering',
+    avatarColor: '#64748b',
+  },
+]
+
+/** A term takes its name from the month it is halfway through, not its first day. */
+const buildSemester = (
+  id: string,
+  startOffset: number,
+  lengthDays: number,
+  current: boolean,
+): Semester => {
+  const middle = new Date(TERM_START)
+  middle.setDate(middle.getDate() + startOffset + Math.round(lengthDays / 2))
+  return {
+    id,
+    term: TERM_OF_MONTH[middle.getMonth()],
+    year: middle.getFullYear(),
+    startDate: termDay(startOffset),
+    endDate: termDay(startOffset + lengthDays),
+    current,
+  }
+}
+
+const semesters: Semester[] = [
+  buildSemester('sem-current', 0, 126, true),
+  buildSemester('sem-summer', -56, 56, false),
+  buildSemester('sem-previous', -196, 126, false),
+  buildSemester('sem-earlier', -350, 126, false),
+]
+
+const categories = [
+  { id: 'cat-cs', name: 'Computer Science', color: '#6366f1', description: 'Systems, algorithms, and software engineering.' },
+  { id: 'cat-math', name: 'Mathematics', color: '#0ea5e9', description: 'Pure and applied mathematics.' },
+  { id: 'cat-ds', name: 'Data Science', color: '#10b981', description: 'Statistics, machine learning, and data engineering.' },
+  { id: 'cat-ee', name: 'Electrical Engineering', color: '#f59e0b', description: 'Signals, circuits, and embedded systems.' },
+  { id: 'cat-seminar', name: 'Seminar', color: '#a855f7', description: 'Reading groups and research seminars.' },
+]
+
+const tags = [
+  { id: 'tag-core', name: 'core', color: '#6366f1' },
+  { id: 'tag-elective', name: 'elective', color: '#8b5cf6' },
+  { id: 'tag-lab', name: 'lab', color: '#f59e0b' },
+  { id: 'tag-python', name: 'python', color: '#0ea5e9' },
+  { id: 'tag-c', name: 'c-programming', color: '#64748b' },
+  { id: 'tag-theory', name: 'theory', color: '#ec4899' },
+  { id: 'tag-ml', name: 'machine-learning', color: '#10b981' },
+  { id: 'tag-systems', name: 'systems', color: '#f43f5e' },
+  { id: 'tag-project', name: 'project-based', color: '#14b8a6' },
+  { id: 'tag-online', name: 'online', color: '#a855f7' },
+  { id: 'tag-exam-prep', name: 'exam-prep', color: '#eab308' },
+]
+
+const courses: Course[] = [
+  {
+    id: 'c-os',
+    code: 'CE-341',
+    title: 'Operating Systems',
+    summary: 'Processes, scheduling, virtual memory, file systems, and concurrency, built around a semester-long kernel project.',
+    description:
+      'A hands-on treatment of how an operating system works, from the boot sequence to the page fault handler. Lectures follow the classic topics; the lab track has you extend a teaching kernel written in C until it can run a preemptive scheduler, a copy-on-write fork, and a journaling file system. Weekly labs are graded by an autograder with three free late days for the semester.',
+    semesterId: 'sem-current',
+    categoryId: 'cat-cs',
+    tagIds: ['tag-core', 'tag-systems', 'tag-c', 'tag-lab'],
+    professorIds: ['p-nasseri'],
+    taIds: ['ta-mehta', 'ta-chen'],
+    status: 'published',
+    level: 'undergraduate',
+    credits: 4,
+    capacity: 90,
+    enrolled: 84,
+    language: 'English',
+    color: '#6366f1',
+    location: 'Engineering Hall, Room 201',
+    meetingTimes: [
+      { day: 1, start: '10:00', end: '11:30', room: 'EH 201' },
+      { day: 3, start: '10:00', end: '11:30', room: 'EH 201' },
+      { day: 5, start: '14:00', end: '16:00', room: 'EH Lab B' },
+    ],
+    prerequisites: ['CE-201 Computer Architecture', 'CE-210 Data Structures'],
+    objectives: [
+      'Explain how the kernel isolates processes and multiplexes the CPU.',
+      'Implement a preemptive scheduler and measure its fairness.',
+      'Reason about race conditions and prove a locking scheme correct.',
+      'Build a crash-consistent file system layer.',
+    ],
+    gradingScheme: [
+      { label: 'Labs', weight: 40 },
+      { label: 'Homework', weight: 15 },
+      { label: 'Midterm', weight: 20 },
+      { label: 'Final exam', weight: 25 },
+    ],
+    createdAt: termDay(-60),
+    updatedAt: termDay(16),
+  },
+  {
+    id: 'c-distsys',
+    code: 'CE-521',
+    title: 'Distributed Systems',
+    summary: 'Consensus, replication, and the failure modes that make distributed computing hard.',
+    description:
+      'A graduate course organised around reading and reproducing systems papers. We work through logical clocks, Paxos and Raft, linearizability, CRDTs, and the practical consistency models shipped by production databases. Each student reproduces one result from a paper of their choosing and presents it in the last three weeks.',
+    semesterId: 'sem-current',
+    categoryId: 'cat-cs',
+    tagIds: ['tag-systems', 'tag-theory', 'tag-project'],
+    professorIds: ['p-nasseri'],
+    taIds: ['ta-chen'],
+    status: 'published',
+    level: 'graduate',
+    credits: 3,
+    capacity: 35,
+    enrolled: 31,
+    language: 'English',
+    color: '#f43f5e',
+    location: 'Engineering Hall, Room 410',
+    meetingTimes: [
+      { day: 2, start: '13:00', end: '15:00', room: 'EH 410' },
+      { day: 4, start: '13:00', end: '15:00', room: 'EH 410' },
+    ],
+    prerequisites: ['CE-341 Operating Systems', 'Comfort with Go or Rust'],
+    objectives: [
+      'Compare consensus protocols by their failure assumptions.',
+      'Test a replicated service under partition and clock skew.',
+      'Read a systems paper critically and reproduce its core claim.',
+    ],
+    gradingScheme: [
+      { label: 'Paper reviews', weight: 20 },
+      { label: 'Lab assignments', weight: 35 },
+      { label: 'Reproduction project', weight: 35 },
+      { label: 'Participation', weight: 10 },
+    ],
+    createdAt: termDay(-53),
+    updatedAt: termDay(28),
+  },
+  {
+    id: 'c-linalg',
+    code: 'MATH-214',
+    title: 'Linear Algebra and Its Applications',
+    summary: 'Vector spaces, eigenvalues, and matrix factorisations, with a computational track in NumPy.',
+    description:
+      'The standard second-year linear algebra course with an applied slant. Proofs are expected, but every major theorem is paired with a computation: least squares on real measurement data, PageRank on a crawled subgraph, and image compression with the SVD. Weekly problem sets alternate between written proofs and short notebooks.',
+    semesterId: 'sem-current',
+    categoryId: 'cat-math',
+    tagIds: ['tag-core', 'tag-theory', 'tag-python'],
+    professorIds: ['p-okonkwo'],
+    taIds: ['ta-lund'],
+    status: 'published',
+    level: 'undergraduate',
+    credits: 4,
+    capacity: 140,
+    enrolled: 137,
+    language: 'English',
+    color: '#0ea5e9',
+    location: 'Science Building, Lecture Hall A',
+    meetingTimes: [
+      { day: 1, start: '08:30', end: '10:00', room: 'SB-A' },
+      { day: 3, start: '08:30', end: '10:00', room: 'SB-A' },
+    ],
+    prerequisites: ['MATH-101 Calculus I'],
+    objectives: [
+      'Decide when a linear system has zero, one, or infinitely many solutions.',
+      'Diagonalise a matrix and interpret its eigenvalues.',
+      'Apply the SVD to a least-squares and a compression problem.',
+    ],
+    gradingScheme: [
+      { label: 'Problem sets', weight: 30 },
+      { label: 'Midterm', weight: 30 },
+      { label: 'Final exam', weight: 40 },
+    ],
+    createdAt: termDay(-74),
+    updatedAt: termDay(22),
+  },
+  {
+    id: 'c-ml',
+    code: 'DS-402',
+    title: 'Statistical Machine Learning',
+    summary: 'From regularised regression to gradient boosting, with an emphasis on evaluation done honestly.',
+    description:
+      'Covers the bias–variance decomposition, regularisation, kernel methods, tree ensembles, and neural networks, always returning to the question of whether a reported number would survive a new sample. Assignments use scikit-learn and PyTorch; the final project runs on a dataset you choose and is graded partly on how well the evaluation resists leakage.',
+    semesterId: 'sem-current',
+    categoryId: 'cat-ds',
+    tagIds: ['tag-ml', 'tag-python', 'tag-project', 'tag-elective'],
+    professorIds: ['p-varga'],
+    taIds: ['ta-mehta'],
+    status: 'published',
+    level: 'graduate',
+    credits: 3,
+    capacity: 60,
+    enrolled: 58,
+    language: 'English',
+    color: '#10b981',
+    location: 'Engineering Hall, Room 118',
+    meetingTimes: [
+      { day: 2, start: '09:00', end: '11:00', room: 'EH 118' },
+      { day: 4, start: '16:00', end: '17:30', room: 'EH Lab A' },
+    ],
+    prerequisites: ['MATH-214 Linear Algebra', 'STAT-201 Probability'],
+    objectives: [
+      'Choose a model class from the structure of the data, not from habit.',
+      'Design a validation scheme that matches how the model will be deployed.',
+      'Diagnose overfitting and leakage from learning curves.',
+    ],
+    gradingScheme: [
+      { label: 'Assignments', weight: 40 },
+      { label: 'Midterm', weight: 20 },
+      { label: 'Final project', weight: 40 },
+    ],
+    createdAt: termDay(-63),
+    updatedAt: termDay(32),
+  },
+  {
+    id: 'c-dsp',
+    code: 'EE-315',
+    title: 'Digital Signal Processing',
+    summary: 'Sampling, the DFT, filter design, and a hardware lab on an embedded DSP board.',
+    description:
+      'Starts from the sampling theorem and builds to FIR and IIR filter design, with a lab track on a TI board where you implement a real-time equaliser. The written assignments are heavy on transforms; the labs are heavy on debugging fixed-point arithmetic.',
+    semesterId: 'sem-current',
+    categoryId: 'cat-ee',
+    tagIds: ['tag-core', 'tag-lab'],
+    professorIds: ['p-ibrahim'],
+    taIds: ['ta-diallo'],
+    status: 'published',
+    level: 'undergraduate',
+    credits: 4,
+    capacity: 70,
+    enrolled: 52,
+    language: 'English',
+    color: '#f59e0b',
+    location: 'Tesla Lab, Room 120',
+    meetingTimes: [
+      { day: 1, start: '13:00', end: '14:30', room: 'TL 120' },
+      { day: 4, start: '10:00', end: '12:00', room: 'TL DSP Lab' },
+    ],
+    prerequisites: ['EE-201 Signals and Systems'],
+    objectives: [
+      'Relate a discrete spectrum to its continuous-time original.',
+      'Design an FIR filter to a stated specification.',
+      'Implement a fixed-point filter under real-time constraints.',
+    ],
+    gradingScheme: [
+      { label: 'Labs', weight: 35 },
+      { label: 'Homework', weight: 20 },
+      { label: 'Final exam', weight: 45 },
+    ],
+    createdAt: termDay(-49),
+    updatedAt: termDay(8),
+  },
+  {
+    id: 'c-seminar',
+    code: 'CE-690',
+    title: 'Systems Reading Group',
+    summary: 'One paper a week, one discussion leader a week. No exams, no slides from the instructor.',
+    description:
+      'A one-credit seminar. Everyone reads the week\'s paper and writes a half-page review before Friday; one student leads the discussion. Papers are chosen by vote in the first session and lean toward storage, scheduling, and anything with a surprising benchmark.',
+    semesterId: 'sem-current',
+    categoryId: 'cat-seminar',
+    tagIds: ['tag-systems', 'tag-elective'],
+    professorIds: ['p-nasseri'],
+    taIds: [],
+    status: 'draft',
+    level: 'graduate',
+    credits: 1,
+    capacity: 20,
+    enrolled: 0,
+    language: 'English',
+    color: '#a855f7',
+    location: 'Engineering Hall, Room 418',
+    meetingTimes: [{ day: 5, start: '12:00', end: '13:30', room: 'EH 418' }],
+    prerequisites: [],
+    objectives: ['Read a paper a week and defend a position about it.'],
+    gradingScheme: [
+      { label: 'Weekly reviews', weight: 60 },
+      { label: 'Discussion leading', weight: 40 },
+    ],
+    createdAt: termDay(-25),
+    updatedAt: termDay(-25),
+  },
+  {
+    id: 'c-algos',
+    code: 'CE-310',
+    title: 'Algorithm Design',
+    summary: 'Greedy, divide and conquer, dynamic programming, flows, and NP-completeness.',
+    description:
+      'The standard algorithms course, taught from Kleinberg & Tardos with supplementary notes. Problem sets are written; a small coding component checks that your dynamic programme actually runs in the complexity you claimed.',
+    semesterId: 'sem-previous',
+    categoryId: 'cat-cs',
+    tagIds: ['tag-core', 'tag-theory'],
+    professorIds: ['p-nasseri'],
+    taIds: ['ta-chen', 'ta-mehta'],
+    status: 'archived',
+    level: 'undergraduate',
+    credits: 4,
+    capacity: 120,
+    enrolled: 118,
+    language: 'English',
+    color: '#8b5cf6',
+    location: 'Engineering Hall, Room 201',
+    meetingTimes: [
+      { day: 2, start: '10:00', end: '11:30', room: 'EH 201' },
+      { day: 4, start: '10:00', end: '11:30', room: 'EH 201' },
+    ],
+    prerequisites: ['CE-210 Data Structures'],
+    objectives: [
+      'Prove a greedy algorithm correct with an exchange argument.',
+      'Recognise a problem as NP-complete and choose an approximation.',
+    ],
+    gradingScheme: [
+      { label: 'Problem sets', weight: 35 },
+      { label: 'Midterm', weight: 25 },
+      { label: 'Final exam', weight: 40 },
+    ],
+    createdAt: termDay(-203),
+    updatedAt: termDay(-13),
+    archivedAt: termDay(-13),
+  },
+  {
+    id: 'c-probability',
+    code: 'STAT-201',
+    title: 'Probability for Engineers',
+    summary: 'Random variables, limit theorems, and Monte Carlo, taught with simulation alongside proof.',
+    description:
+      'Covers discrete and continuous random variables, expectation, the law of large numbers, and the central limit theorem, each paired with a short simulation so the asymptotics are visible rather than asserted.',
+    semesterId: 'sem-earlier',
+    categoryId: 'cat-math',
+    tagIds: ['tag-core', 'tag-python'],
+    professorIds: ['p-okonkwo'],
+    taIds: ['ta-lund'],
+    status: 'archived',
+    level: 'undergraduate',
+    credits: 3,
+    capacity: 100,
+    enrolled: 96,
+    language: 'English',
+    color: '#ec4899',
+    location: 'Science Building, Room 110',
+    meetingTimes: [{ day: 3, start: '14:00', end: '17:00', room: 'SB 110' }],
+    prerequisites: ['MATH-102 Calculus II'],
+    objectives: ['Model a random experiment and compute its expectation.'],
+    gradingScheme: [
+      { label: 'Homework', weight: 30 },
+      { label: 'Final exam', weight: 70 },
+    ],
+    createdAt: termDay(-360),
+    updatedAt: termDay(-220),
+    archivedAt: termDay(-220),
+  },
+  {
+    id: 'c-webdev',
+    code: 'CE-255',
+    title: 'Modern Web Engineering',
+    summary: 'Accessible, fast front ends and the APIs behind them, delivered as one team project.',
+    description:
+      'A project course. Teams of four ship a working application over the semester with weekly reviews on accessibility, performance budgets, and test coverage. The stack is TypeScript and React on the client with a REST service behind it.',
+    semesterId: 'sem-summer',
+    categoryId: 'cat-cs',
+    tagIds: ['tag-elective', 'tag-project', 'tag-online'],
+    professorIds: ['p-varga'],
+    taIds: ['ta-mehta'],
+    status: 'archived',
+    level: 'undergraduate',
+    credits: 3,
+    capacity: 45,
+    enrolled: 41,
+    language: 'English',
+    color: '#14b8a6',
+    location: 'Online',
+    meetingTimes: [{ day: 2, start: '18:00', end: '20:00', room: 'Online' }],
+    prerequisites: ['CE-210 Data Structures'],
+    objectives: ['Ship an accessible application against a performance budget.'],
+    gradingScheme: [
+      { label: 'Team project', weight: 70 },
+      { label: 'Code reviews', weight: 30 },
+    ],
+    createdAt: termDay(-84),
+    updatedAt: termDay(-54),
+    archivedAt: termDay(-54),
+  },
+]
+
+const modules: Module[] = [
+  { id: 'm-os-1', courseId: 'c-os', title: 'Processes and the kernel boundary', summary: 'System calls, traps, and the process abstraction.', order: 1 },
+  { id: 'm-os-2', courseId: 'c-os', title: 'Scheduling', summary: 'Round robin through CFS, and how to measure fairness.', order: 2 },
+  { id: 'm-os-3', courseId: 'c-os', title: 'Virtual memory', summary: 'Paging, TLBs, copy-on-write, and page replacement.', order: 3 },
+  { id: 'm-os-4', courseId: 'c-os', title: 'Concurrency', summary: 'Locks, condition variables, and deadlock.', order: 4 },
+  { id: 'm-os-5', courseId: 'c-os', title: 'File systems', summary: 'Inodes, journaling, and crash consistency.', order: 5 },
+  { id: 'm-ds-1', courseId: 'c-distsys', title: 'Time and ordering', order: 1 },
+  { id: 'm-ds-2', courseId: 'c-distsys', title: 'Consensus', order: 2 },
+  { id: 'm-ds-3', courseId: 'c-distsys', title: 'Replication and consistency', order: 3 },
+  { id: 'm-la-1', courseId: 'c-linalg', title: 'Vector spaces', order: 1 },
+  { id: 'm-la-2', courseId: 'c-linalg', title: 'Eigenvalues and diagonalisation', order: 2 },
+  { id: 'm-la-3', courseId: 'c-linalg', title: 'Orthogonality and the SVD', order: 3 },
+  { id: 'm-ml-1', courseId: 'c-ml', title: 'Supervised learning foundations', order: 1 },
+  { id: 'm-ml-2', courseId: 'c-ml', title: 'Regularisation and model selection', order: 2 },
+  { id: 'm-ml-3', courseId: 'c-ml', title: 'Ensembles and neural networks', order: 3 },
+  { id: 'm-dsp-1', courseId: 'c-dsp', title: 'Sampling and reconstruction', order: 1 },
+  { id: 'm-dsp-2', courseId: 'c-dsp', title: 'The DFT and the FFT', order: 2 },
+  { id: 'm-dsp-3', courseId: 'c-dsp', title: 'Filter design', order: 3 },
+]
+
+const mb = (n: number) => Math.round(n * 1024 * 1024)
+
+const materials: Material[] = [
+  { id: 'mat-1', courseId: 'c-os', moduleId: 'm-os-1', title: 'Lecture 1 — What an operating system actually does', type: 'slides', url: 'https://files.university.edu/ce341/lec01-intro.pdf', sizeBytes: mb(4.2), tagIds: ['tag-systems'], week: 1, authorId: 'p-nasseri', visible: true, downloads: 312, description: 'Course logistics, the kernel/user boundary, and a tour of the teaching kernel.', createdAt: termDay(0), updatedAt: termDay(0) },
+  { id: 'mat-2', courseId: 'c-os', moduleId: 'm-os-1', title: 'Operating Systems: Three Easy Pieces', type: 'ebook', url: 'https://pages.cs.wisc.edu/~remzi/OSTEP/', sizeBytes: mb(18.6), tagIds: ['tag-core'], authorId: 'p-nasseri', visible: true, downloads: 596, description: 'Primary textbook. Free online; chapter numbers in the syllabus refer to this edition.', createdAt: termDay(0), updatedAt: termDay(0) },
+  { id: 'mat-3', courseId: 'c-os', moduleId: 'm-os-1', title: 'Lab 0 setup guide — toolchain and QEMU', type: 'note', url: 'https://files.university.edu/ce341/lab0-setup.md', sizeBytes: mb(0.3), tagIds: ['tag-lab', 'tag-c'], week: 1, authorId: 'ta-mehta', visible: true, downloads: 288, description: 'Cross-compiler, QEMU, and the grading harness, on Linux and macOS.', createdAt: termDay(1), updatedAt: termDay(7) },
+  { id: 'mat-4', courseId: 'c-os', moduleId: 'm-os-2', title: 'Lecture 4 — CPU scheduling', type: 'slides', url: 'https://files.university.edu/ce341/lec04-scheduling.pdf', sizeBytes: mb(5.1), tagIds: ['tag-systems'], week: 3, authorId: 'p-nasseri', visible: true, downloads: 241, createdAt: termDay(14), updatedAt: termDay(14) },
+  { id: 'mat-5', courseId: 'c-os', moduleId: 'm-os-2', title: 'Scheduler simulator (Python)', type: 'code', url: 'https://git.university.edu/ce341/sched-sim', sizeBytes: mb(0.8), tagIds: ['tag-python', 'tag-lab'], week: 3, authorId: 'ta-chen', visible: true, downloads: 176, description: 'Plots turnaround and response time for FIFO, SJF, RR, and MLFQ.', createdAt: termDay(15), updatedAt: termDay(18) },
+  { id: 'mat-6', courseId: 'c-os', moduleId: 'm-os-3', title: 'Lecture 7 — Paging and the TLB', type: 'slides', url: 'https://files.university.edu/ce341/lec07-paging.pdf', sizeBytes: mb(6.4), tagIds: ['tag-systems'], week: 5, authorId: 'p-nasseri', visible: true, downloads: 198, createdAt: termDay(28), updatedAt: termDay(28) },
+  { id: 'mat-7', courseId: 'c-os', moduleId: 'm-os-3', title: 'Recitation recording — page fault walkthrough', type: 'video', url: 'https://media.university.edu/ce341/rec-pagefault', sizeBytes: 0, tagIds: ['tag-systems'], week: 5, authorId: 'ta-chen', visible: true, downloads: 134, description: '52 minutes. Single-steps a fault from the trap frame to the physical frame allocator.', createdAt: termDay(30), updatedAt: termDay(30) },
+  { id: 'mat-8', courseId: 'c-os', moduleId: 'm-os-4', title: 'Deadlock detection worksheet', type: 'note', url: 'https://files.university.edu/ce341/deadlock-worksheet.pdf', sizeBytes: mb(0.6), tagIds: ['tag-exam-prep'], week: 8, authorId: 'ta-mehta', visible: false, downloads: 0, description: 'Draft — release with the midterm review session.', createdAt: termDay(50), updatedAt: termDay(50) },
+  { id: 'mat-9', courseId: 'c-os', moduleId: 'm-os-5', title: 'Crash consistency: FSCK and journaling (chapter reprint)', type: 'paper', url: 'https://files.university.edu/ce341/crash-consistency.pdf', sizeBytes: mb(2.1), tagIds: ['tag-systems'], week: 11, authorId: 'p-nasseri', visible: true, downloads: 88, createdAt: termDay(70), updatedAt: termDay(70) },
+  { id: 'mat-10', courseId: 'c-distsys', moduleId: 'm-ds-1', title: 'Time, Clocks, and the Ordering of Events (Lamport, 1978)', type: 'paper', url: 'https://lamport.azurewebsites.net/pubs/time-clocks.pdf', sizeBytes: mb(1.1), tagIds: ['tag-theory'], week: 1, authorId: 'p-nasseri', visible: true, downloads: 142, description: 'Week 1 reading. Review due Thursday.', createdAt: termDay(1), updatedAt: termDay(1) },
+  { id: 'mat-11', courseId: 'c-distsys', moduleId: 'm-ds-2', title: 'In Search of an Understandable Consensus Algorithm (Raft)', type: 'paper', url: 'https://raft.github.io/raft.pdf', sizeBytes: mb(1.4), tagIds: ['tag-theory', 'tag-systems'], week: 4, authorId: 'p-nasseri', visible: true, downloads: 137, createdAt: termDay(22), updatedAt: termDay(22) },
+  { id: 'mat-12', courseId: 'c-distsys', moduleId: 'm-ds-2', title: 'Raft lab skeleton (Go)', type: 'code', url: 'https://git.university.edu/ce521/raft-lab', sizeBytes: mb(1.9), tagIds: ['tag-lab', 'tag-project'], week: 4, authorId: 'ta-chen', visible: true, downloads: 119, description: 'Tests run under -race. Start from the leader election test only.', createdAt: termDay(23), updatedAt: termDay(35) },
+  { id: 'mat-13', courseId: 'c-distsys', moduleId: 'm-ds-3', title: 'Lecture 9 — Consistency models, ranked', type: 'slides', url: 'https://files.university.edu/ce521/lec09-consistency.pdf', sizeBytes: mb(3.8), tagIds: ['tag-theory'], week: 7, authorId: 'p-nasseri', visible: true, downloads: 96, createdAt: termDay(45), updatedAt: termDay(45) },
+  { id: 'mat-14', courseId: 'c-linalg', moduleId: 'm-la-1', title: 'Lecture notes 1–4 — Vector spaces and bases', type: 'note', url: 'https://files.university.edu/math214/notes-01-04.pdf', sizeBytes: mb(2.9), tagIds: ['tag-theory'], week: 1, authorId: 'p-okonkwo', visible: true, downloads: 508, createdAt: termDay(0), updatedAt: termDay(9) },
+  { id: 'mat-15', courseId: 'c-linalg', moduleId: 'm-la-1', title: 'Introduction to Linear Algebra — course reader', type: 'ebook', url: 'https://files.university.edu/math214/reader.pdf', sizeBytes: mb(24.3), tagIds: ['tag-core'], authorId: 'p-okonkwo', visible: true, downloads: 721, description: 'Selected chapters, cleared by the library for course use.', createdAt: termDay(0), updatedAt: termDay(0) },
+  { id: 'mat-16', courseId: 'c-linalg', moduleId: 'm-la-2', title: 'Eigenvalue drill set with solutions', type: 'note', url: 'https://files.university.edu/math214/eigen-drills.pdf', sizeBytes: mb(1.2), tagIds: ['tag-exam-prep'], week: 6, authorId: 'ta-lund', visible: true, downloads: 445, createdAt: termDay(35), updatedAt: termDay(35) },
+  { id: 'mat-17', courseId: 'c-linalg', moduleId: 'm-la-3', title: 'SVD image compression notebook', type: 'code', url: 'https://git.university.edu/math214/svd-notebook', sizeBytes: mb(3.4), tagIds: ['tag-python'], week: 10, authorId: 'ta-lund', visible: true, downloads: 233, description: 'Rank-k reconstruction of a 4K photograph, with error curves.', createdAt: termDay(63), updatedAt: termDay(63) },
+  { id: 'mat-18', courseId: 'c-linalg', moduleId: 'm-la-3', title: 'Lecture 18 — Least squares and the normal equations', type: 'slides', url: 'https://files.university.edu/math214/lec18-lsq.pdf', sizeBytes: mb(4.7), tagIds: [], week: 9, authorId: 'p-okonkwo', visible: true, downloads: 187, createdAt: termDay(58), updatedAt: termDay(58) },
+  { id: 'mat-19', courseId: 'c-ml', moduleId: 'm-ml-1', title: 'Lecture 2 — Bias, variance, and what a test set is for', type: 'slides', url: 'https://files.university.edu/ds402/lec02-bias-variance.pdf', sizeBytes: mb(5.6), tagIds: ['tag-ml'], week: 2, authorId: 'p-varga', visible: true, downloads: 276, createdAt: termDay(8), updatedAt: termDay(8) },
+  { id: 'mat-20', courseId: 'c-ml', moduleId: 'm-ml-1', title: 'The Elements of Statistical Learning', type: 'ebook', url: 'https://hastie.su.domains/ElemStatLearn/', sizeBytes: mb(12.8), tagIds: ['tag-ml', 'tag-core'], authorId: 'p-varga', visible: true, downloads: 402, description: 'Reference text, free from the authors. Chapters 3, 7, and 10 are assigned.', createdAt: termDay(0), updatedAt: termDay(0) },
+  { id: 'mat-21', courseId: 'c-ml', moduleId: 'm-ml-2', title: 'Cross-validation done wrong — worked examples', type: 'code', url: 'https://git.university.edu/ds402/cv-pitfalls', sizeBytes: mb(2.2), tagIds: ['tag-python', 'tag-ml'], week: 5, authorId: 'ta-mehta', visible: true, downloads: 214, description: 'Four notebooks, each leaking in a different way. Find the leak before reading the last cell.', createdAt: termDay(29), updatedAt: termDay(38) },
+  { id: 'mat-22', courseId: 'c-ml', moduleId: 'm-ml-2', title: 'Housing prices dataset (cleaned)', type: 'dataset', url: 'https://data.university.edu/ds402/housing-clean.csv', sizeBytes: mb(8.9), tagIds: ['tag-ml'], week: 5, authorId: 'ta-mehta', visible: true, downloads: 198, description: '41,320 rows. The split by transaction date is the one to use for Assignment 2.', createdAt: termDay(29), updatedAt: termDay(29) },
+  { id: 'mat-23', courseId: 'c-ml', moduleId: 'm-ml-3', title: 'Gradient boosting from scratch — recording', type: 'video', url: 'https://media.university.edu/ds402/gbm-live', sizeBytes: 0, tagIds: ['tag-ml'], week: 9, authorId: 'p-varga', visible: true, downloads: 163, description: '1h 12m live-coded session; the residual plot at 38:00 is the one referenced in the slides.', createdAt: termDay(64), updatedAt: termDay(64) },
+  { id: 'mat-24', courseId: 'c-dsp', moduleId: 'm-dsp-1', title: 'Lecture 1 — Sampling and aliasing', type: 'slides', url: 'https://files.university.edu/ee315/lec01-sampling.pdf', sizeBytes: mb(7.3), tagIds: [], week: 1, authorId: 'p-ibrahim', visible: true, downloads: 154, createdAt: termDay(0), updatedAt: termDay(0) },
+  { id: 'mat-25', courseId: 'c-dsp', moduleId: 'm-dsp-2', title: 'FFT worked examples', type: 'note', url: 'https://files.university.edu/ee315/fft-examples.pdf', sizeBytes: mb(1.5), tagIds: ['tag-exam-prep'], week: 4, authorId: 'ta-diallo', visible: true, downloads: 131, createdAt: termDay(24), updatedAt: termDay(24) },
+  { id: 'mat-26', courseId: 'c-dsp', moduleId: 'm-dsp-3', title: 'Lab 3 — Real-time equaliser on the TI board', type: 'note', url: 'https://files.university.edu/ee315/lab3.pdf', sizeBytes: mb(2.4), tagIds: ['tag-lab'], week: 8, authorId: 'ta-diallo', visible: true, downloads: 97, description: 'Bring headphones. Fixed-point overflow is the failure mode you will hit first.', createdAt: termDay(51), updatedAt: termDay(56) },
+  { id: 'mat-27', courseId: 'c-dsp', moduleId: 'm-dsp-3', title: 'Filter design reference tables', type: 'link', url: 'https://www.dsprelated.com/freebooks/filters/', sizeBytes: 0, tagIds: [], week: 8, authorId: 'p-ibrahim', visible: true, downloads: 64, createdAt: termDay(51), updatedAt: termDay(51) },
+  { id: 'mat-28', courseId: 'c-algos', title: 'Full lecture slide archive (Fall 2025)', type: 'slides', url: 'https://files.university.edu/ce310/f25-all-slides.zip', sizeBytes: mb(64.2), tagIds: ['tag-theory'], authorId: 'p-nasseri', visible: true, downloads: 833, description: 'All 26 lectures, bundled at the end of the semester.', createdAt: termDay(-14), updatedAt: termDay(-14) },
+  { id: 'mat-29', courseId: 'c-algos', title: 'Final exam with solutions (Fall 2025)', type: 'note', url: 'https://files.university.edu/ce310/f25-final-solutions.pdf', sizeBytes: mb(1.8), tagIds: ['tag-exam-prep'], authorId: 'ta-chen', visible: true, downloads: 1204, createdAt: termDay(-11), updatedAt: termDay(-11) },
+  { id: 'mat-30', courseId: 'c-probability', title: 'Simulation notebooks — LLN and CLT', type: 'code', url: 'https://git.university.edu/stat201/simulations', sizeBytes: mb(1.1), tagIds: ['tag-python'], authorId: 'ta-lund', visible: true, downloads: 341, createdAt: termDay(-280), updatedAt: termDay(-280) },
+  { id: 'mat-31', courseId: 'c-webdev', title: 'Accessibility review checklist', type: 'note', url: 'https://files.university.edu/ce255/a11y-checklist.pdf', sizeBytes: mb(0.4), tagIds: ['tag-project'], authorId: 'p-varga', visible: true, downloads: 267, description: 'What each weekly review checks, in the order it is checked.', createdAt: termDay(-216), updatedAt: termDay(-216) },
+]
+
+const assignments: Assignment[] = [
+  { id: 'a-1', courseId: 'c-os', title: 'Lab 2 — Preemptive scheduler', type: 'lab', description: 'Replace the cooperative scheduler with a preemptive round-robin one driven by the timer interrupt, then measure response time under the provided workload mix. Submit the kernel patch and a one-page write-up of your measurements.', dueDate: fromNow(4, 23, 59), releaseDate: fromNow(-10), points: 100, weight: 10, allowLate: true, published: true, submissions: 61, graded: 12, authorId: 'ta-mehta', tagIds: ['tag-lab', 'tag-c'], attachmentUrl: 'https://files.university.edu/ce341/lab2.pdf', createdAt: termDay(18), updatedAt: termDay(27) },
+  { id: 'a-2', courseId: 'c-os', title: 'Homework 3 — Virtual memory', type: 'homework', description: 'Six problems on page table walks, TLB reach, and page replacement. Problem 5 asks you to compute the working set from a supplied trace; the trace is in the materials tab.', dueDate: fromNow(11), releaseDate: fromNow(-3), points: 60, weight: 5, allowLate: false, published: true, submissions: 8, graded: 0, authorId: 'p-nasseri', tagIds: ['tag-systems'], createdAt: termDay(31), updatedAt: termDay(31) },
+  { id: 'a-3', courseId: 'c-os', title: 'Midterm exam', type: 'exam', description: 'Covers modules 1–3. Closed book, one double-sided sheet of notes allowed. Two hours, Engineering Hall 201.', dueDate: fromNow(19, 12, 0), releaseDate: fromNow(-2), points: 200, weight: 20, allowLate: false, published: true, submissions: 0, graded: 0, authorId: 'p-nasseri', tagIds: ['tag-exam-prep'], createdAt: termDay(32), updatedAt: termDay(32) },
+  { id: 'a-4', courseId: 'c-os', title: 'Lab 3 — Copy-on-write fork', type: 'lab', description: 'Make fork() lazy. Share physical pages until first write, then split on the fault. The test suite checks both correctness and that you actually saved the copies.', dueDate: fromNow(25), releaseDate: fromNow(1), points: 100, weight: 10, allowLate: true, published: false, submissions: 0, graded: 0, authorId: 'ta-chen', tagIds: ['tag-lab', 'tag-c'], createdAt: termDay(36), updatedAt: termDay(36) },
+  { id: 'a-5', courseId: 'c-distsys', title: 'Paper review — Raft', type: 'homework', description: 'One page. State the paper\'s main claim, the assumption you find least defensible, and one experiment that would test it.', dueDate: fromNow(2, 17, 0), releaseDate: fromNow(-5), points: 20, weight: 4, allowLate: false, published: true, submissions: 24, graded: 24, authorId: 'p-nasseri', tagIds: ['tag-theory'], createdAt: termDay(23), updatedAt: termDay(30) },
+  { id: 'a-6', courseId: 'c-distsys', title: 'Lab 2 — Leader election', type: 'lab', description: 'Implement leader election and heartbeats from the Raft skeleton. Your implementation must pass the election tests under -race and survive a partition of the leader.', dueDate: fromNow(8), releaseDate: fromNow(-9), points: 100, weight: 15, allowLate: true, published: true, submissions: 19, graded: 3, authorId: 'ta-chen', tagIds: ['tag-lab', 'tag-project'], createdAt: termDay(24), updatedAt: termDay(28) },
+  { id: 'a-7', courseId: 'c-distsys', title: 'Reproduction project — proposal', type: 'project', description: 'Two pages: the paper, the claim you will reproduce, the hardware you need, and what a negative result would look like.', dueDate: fromNow(16, 17, 0), releaseDate: fromNow(-1), points: 50, weight: 10, allowLate: false, published: true, submissions: 2, graded: 0, authorId: 'p-nasseri', tagIds: ['tag-project'], createdAt: termDay(34), updatedAt: termDay(34) },
+  { id: 'a-8', courseId: 'c-linalg', title: 'Problem set 6 — Eigenvalues', type: 'homework', description: 'Eight problems. Problems 1–5 are written proofs; 6–8 are a short notebook computing eigenvalues of a Markov chain transition matrix.', dueDate: fromNow(1, 23, 59), releaseDate: fromNow(-6), points: 40, weight: 4, allowLate: true, published: true, submissions: 112, graded: 40, authorId: 'ta-lund', tagIds: ['tag-theory', 'tag-python'], createdAt: termDay(30), updatedAt: termDay(37) },
+  { id: 'a-9', courseId: 'c-linalg', title: 'Midterm exam', type: 'exam', description: 'Chapters 1–4. Calculators permitted, no notes. Ninety minutes in Lecture Hall A.', dueDate: fromNow(13, 8, 30), releaseDate: fromNow(-4), points: 150, weight: 30, allowLate: false, published: true, submissions: 0, graded: 0, authorId: 'p-okonkwo', tagIds: ['tag-exam-prep'], createdAt: termDay(28), updatedAt: termDay(28) },
+  { id: 'a-10', courseId: 'c-linalg', title: 'Problem set 7 — Orthogonality', type: 'homework', description: 'Gram–Schmidt by hand on a 4×3 matrix, then the same with numpy.linalg.qr. Explain any discrepancy in the last digits.', dueDate: fromNow(9), releaseDate: fromNow(-1), points: 40, weight: 4, allowLate: true, published: true, submissions: 31, graded: 0, authorId: 'ta-lund', tagIds: ['tag-python'], createdAt: termDay(37), updatedAt: termDay(37) },
+  { id: 'a-11', courseId: 'c-ml', title: 'Assignment 2 — Regularisation and model selection', type: 'homework', description: 'Fit ridge and lasso to the housing dataset with a temporal split. Report test RMSE, and explain in three sentences why a random split would have flattered your model.', dueDate: fromNow(6), releaseDate: fromNow(-8), points: 100, weight: 13, allowLate: true, published: true, submissions: 44, graded: 9, authorId: 'ta-mehta', tagIds: ['tag-ml', 'tag-python'], attachmentUrl: 'https://files.university.edu/ds402/a2.pdf', createdAt: termDay(29), updatedAt: termDay(33) },
+  { id: 'a-12', courseId: 'c-ml', title: 'Final project — dataset proposal', type: 'project', description: 'One page: the dataset, the prediction target, how the train/test split mirrors deployment, and the baseline you must beat.', dueDate: fromNow(14, 17, 0), releaseDate: fromNow(-2), points: 40, weight: 5, allowLate: false, published: true, submissions: 11, graded: 0, authorId: 'p-varga', tagIds: ['tag-project'], createdAt: termDay(32), updatedAt: termDay(32) },
+  { id: 'a-13', courseId: 'c-ml', title: 'Quiz 3 — Kernels', type: 'quiz', description: 'Twenty minutes, in class. Covers the kernel trick, Mercer\'s condition, and choosing a bandwidth.', dueDate: fromNow(3, 9, 20), releaseDate: fromNow(-1), points: 20, weight: 2, allowLate: false, published: true, submissions: 0, graded: 0, authorId: 'p-varga', tagIds: [], createdAt: termDay(35), updatedAt: termDay(35) },
+  { id: 'a-14', courseId: 'c-dsp', title: 'Lab 3 — Real-time equaliser', type: 'lab', description: 'Implement a five-band equaliser in fixed point on the TI board. Demo in lab; submit the source and a short note on how you handled overflow.', dueDate: fromNow(7), releaseDate: fromNow(-12), points: 100, weight: 12, allowLate: true, published: true, submissions: 22, graded: 5, authorId: 'ta-diallo', tagIds: ['tag-lab'], createdAt: termDay(26), updatedAt: termDay(31) },
+  { id: 'a-15', courseId: 'c-dsp', title: 'Homework 4 — FIR design', type: 'homework', description: 'Design an FIR low-pass filter to a 40 dB stopband specification using windowing, then again with Parks–McClellan, and compare the orders.', dueDate: fromNow(18), releaseDate: fromNow(0), points: 50, weight: 5, allowLate: false, published: true, submissions: 0, graded: 0, authorId: 'p-ibrahim', tagIds: [], createdAt: termDay(38), updatedAt: termDay(38) },
+  { id: 'a-16', courseId: 'c-os', title: 'Lab 1 — System calls', type: 'lab', description: 'Add three system calls to the teaching kernel and write the user-space tests for them.', dueDate: fromNow(-12), releaseDate: fromNow(-26), points: 100, weight: 10, allowLate: true, published: true, submissions: 84, graded: 84, authorId: 'ta-mehta', tagIds: ['tag-lab', 'tag-c'], createdAt: termDay(2), updatedAt: termDay(24) },
+  { id: 'a-17', courseId: 'c-linalg', title: 'Problem set 5 — Determinants', type: 'homework', description: 'Cofactor expansion, the effect of row operations, and one proof that the determinant is multiplicative.', dueDate: fromNow(-8), releaseDate: fromNow(-20), points: 40, weight: 4, allowLate: true, published: true, submissions: 134, graded: 134, authorId: 'ta-lund', tagIds: ['tag-theory'], createdAt: termDay(20), updatedAt: termDay(32) },
+  { id: 'a-18', courseId: 'c-ml', title: 'Assignment 1 — Regression baselines', type: 'homework', description: 'Linear regression from scratch, then with scikit-learn, on the same data. The numbers should match to six decimals; explain them if they do not.', dueDate: fromNow(-18), releaseDate: fromNow(-30), points: 100, weight: 13, allowLate: true, published: true, submissions: 58, graded: 58, authorId: 'ta-mehta', tagIds: ['tag-ml', 'tag-python'], createdAt: termDay(3), updatedAt: termDay(26) },
+]
+
+const announcements = [
+  { id: 'an-1', courseId: 'c-os', title: 'Lab 2 deadline extended by 48 hours', body: 'The autograder queue backed up on Tuesday night and several of you lost submission attempts through no fault of your own. Lab 2 now closes Thursday at 23:59. Late days are not consumed by the extension.', authorId: 'p-nasseri', pinned: true, createdAt: fromNow(-2, 9, 15) },
+  { id: 'an-2', courseId: 'c-os', title: 'Extra office hours before the midterm', body: 'Wei and I will hold an additional session on Saturday 10:00–13:00 in EH 118. Bring questions on paging; that is where the practice exam separated people last year.', authorId: 'ta-mehta', pinned: false, createdAt: fromNow(-5, 16, 40) },
+  { id: 'an-3', courseId: 'c-distsys', title: 'Project proposals: pick your paper by Friday', body: 'Add your name and paper to the shared sheet before Friday so we do not end up with six reproductions of the same benchmark. If you want to reproduce something not on the list, email me first.', authorId: 'p-nasseri', pinned: true, createdAt: fromNow(-3, 11, 0) },
+  { id: 'an-4', courseId: 'c-linalg', title: 'Midterm room change', body: 'The midterm moves to Lecture Hall A (from SB 110). Same time. Seating chart goes up on the door the morning of the exam.', authorId: 'p-okonkwo', pinned: true, createdAt: fromNow(-1, 13, 25) },
+  { id: 'an-5', courseId: 'c-ml', title: 'Housing dataset re-uploaded', body: 'The first upload had 212 duplicate rows from the 2019 partition. The cleaned file is up; re-download it before running Assignment 2. Results computed on the old file will not match the grader.', authorId: 'ta-mehta', pinned: false, createdAt: fromNow(-4, 18, 5) },
+  { id: 'an-6', courseId: 'c-dsp', title: 'Bring headphones to Lab 3', body: 'The lab has eight pairs for thirty people. Wired, 3.5 mm.', authorId: 'ta-diallo', pinned: false, createdAt: fromNow(-6, 8, 50) },
+]
+
+export const seedData: AppData = {
+  people,
+  semesters,
+  categories,
+  tags,
+  courses,
+  modules,
+  materials,
+  assignments,
+  announcements,
+}
