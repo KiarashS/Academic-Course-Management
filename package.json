@@ -9,6 +9,9 @@
     "preview": "vite preview",
     "lint": "oxlint",
     "check:content": "node scripts/check-content.mjs",
+    "files:push": "node scripts/course-files.mjs push",
+    "files:pull": "node scripts/course-files.mjs pull",
+    "files:status": "node scripts/course-files.mjs status",
     "predeploy": "npm run check:content && npm run build",
     "deploy": "gh-pages -d dist --dotfiles -m \"Deploy site\""
   },

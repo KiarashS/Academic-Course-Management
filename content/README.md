@@ -38,7 +38,8 @@ can see; Settings turns that draft back into this file.
    ```
 
 4. `npm run check:content` to see whether every referenced file is actually
-   there, then `npm run deploy`.
+   there, then `npm run files:push` and `git push` — the workflow rebuilds and
+   publishes the site.
 
 A course with `status: archived` lands on the Archive page and keeps its
 materials searchable from the library. Leave `status` off for a course that is
@@ -47,15 +48,33 @@ running now; use `draft` for one that is not ready to show.
 ## Files
 
 Everything under `public/courses/<course id>/` is published at
-`<site>/courses/<course id>/<filename>`. That folder is **git-ignored**, so the
-files never enter the repository and never come down with a clone.
+`<site>/courses/<course id>/<filename>`.
 
-The practical consequence: build and deploy from a machine that has the files.
-`npm run deploy` does that — it builds locally and pushes only `dist/` to the
-`gh-pages` branch. A GitHub Actions workflow would check out a repo without the
-files and publish dead links.
+That folder is **not in the repository**. Course material is large and nobody
+cloning the code needs it, so it lives as a GitHub release asset instead — the
+one place on GitHub a `git clone` never reaches. Anything committed, Git LFS
+included, comes down on a clone by default.
 
-To commit the files after all, drop these lines from `.gitignore`:
+```bash
+npm run files:push     # bundle public/courses and upload it to the release
+npm run files:pull     # get the files onto a fresh clone
+npm run files:status   # what is here, what is on GitHub
+```
+
+So adding material is two pushes:
+
+```bash
+npm run files:push     # the files
+git push               # the YAML entry describing them
+```
+
+The deploy workflow downloads the bundle before building, so the published site
+serves every file while the repository stays small. If a file is referenced in
+the YAML but missing, the build still succeeds and warns — `npm run
+check:content` lists exactly which ones, and so does the Settings page.
+
+To commit the files instead, drop these lines from `.gitignore`; the workflow
+then just uses what is already on disk and `files:push` becomes unnecessary:
 
 ```
 public/courses/*

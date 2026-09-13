@@ -1,0 +1,100 @@
+name: Build and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Course files are not in git — they come from a release asset — so the build
+# needs to read releases. Pages deployment needs the other two.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish rather than cancelling it half-published.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # public/courses is deliberately absent from the repository so clones stay
+      # small. Fetch the bundle that `npm run files:push` uploaded.
+      - name: Fetch course files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: course-files
+        run: |
+          mkdir -p public/courses
+          if gh release download "$TAG" --pattern course-files.tar.gz --dir . 2>/dev/null; then
+            tar -xzf course-files.tar.gz -C public/courses
+            rm -f course-files.tar.gz
+            echo "Unpacked $(find public/courses -type f ! -name .gitkeep | wc -l) files."
+          else
+            echo "::warning::No '$TAG' release asset found. Building without course files, so download links will 404. Run 'npm run files:push' locally to publish them."
+          fi
+
+      - name: Check content
+        run: npm run check:content | tee content-report.txt
+
+      - name: Lint
+        run: npm run lint
+
+      # A project site is served from /<repo>/; a <user>.github.io repo from /.
+      - name: Work out the base path
+        id: base
+        run: |
+          if [[ "${{ github.event.repository.name }}" == *.github.io ]]; then
+            echo "path=/" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=/${{ github.event.repository.name }}/" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build
+        env:
+          BASE_PATH: ${{ steps.base.outputs.path }}
+        run: npm run build
+
+      - name: Summarise
+        run: |
+          {
+            echo "### Build"
+            echo
+            echo "Base path \`${{ steps.base.outputs.path }}\`, $(du -sh dist | cut -f1) of output."
+            echo
+            echo '```'
+            cat content-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the site
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    # Pull requests are built to catch breakage, but only main is published.
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

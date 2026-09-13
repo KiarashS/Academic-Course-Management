@@ -12,6 +12,7 @@ file, `content/courses.yaml`, and the files themselves sit in `public/courses/<c
 
 ```bash
 npm install
+npm run files:pull      # fetch the course files (they are not in the clone)
 npm run dev             # http://localhost:5173
 npm run build           # type-check and emit to dist/
 npm run preview         # serve the build at the deployed base path
@@ -44,6 +45,9 @@ courses:
         url: https://pages.cs.wisc.edu/~remzi/OSTEP/
 ```
 
+Then `npm run files:push` to publish the files and `git push` to publish the entry; the workflow
+rebuilds the site.
+
 File sizes and material icons are read from the files themselves, so they do not have to be
 maintained by hand. `content/README.md` documents every field. If an entry is wrong — an unknown
 semester id, a deadline before its release date — the site refuses to load and says which entry and
@@ -51,20 +55,59 @@ why, instead of rendering a blank page.
 
 ## Publishing to GitHub Pages
 
+Pushing to `main` builds and deploys automatically. Set **Settings → Pages → Source** to
+**GitHub Actions** once, and that is the whole setup.
+
+The workflow (`.github/workflows/deploy.yml`) installs, downloads the course files, checks the
+content against them, lints, builds with the right base path, and publishes. Pull requests run the
+same build without deploying, so a broken content file is caught before it reaches the site.
+
+## Course files
+
+`public/courses/` is not in the repository. The files are big and nobody cloning the code needs
+them, so they live as a release asset instead — the one place on GitHub a `git clone` never reaches.
+Committing them, Git LFS included, would pull them down on every clone by default.
+
 ```bash
-npm run deploy     # checks content, builds, pushes dist/ to the gh-pages branch
+npm run files:push     # bundle public/courses and upload it to the release
+npm run files:pull     # get the files onto a fresh clone
+npm run files:status   # what is here, what is on GitHub
 ```
 
-Then set Pages to serve from the `gh-pages` branch. The build writes `404.html` alongside
-`index.html` so deep links work, and `.nojekyll` so Jekyll leaves the output alone. The base path
-is `/Academic-Course-Management/`; override it with `BASE_PATH=/ npm run build` for a user site or
-custom domain.
+`files:push` tars `public/courses/`, creates the `course-files` release if it is missing, and
+uploads `course-files.tar.gz` to it, replacing what was there. The deploy workflow downloads that
+asset before building, so the published site has every file while the repository stays at a few
+hundred kilobytes. Both need the [GitHub CLI](https://cli.github.com) and `gh auth login`.
 
-**Deploy from a machine that has the course files.** `public/courses/` is git-ignored, so the files
-never enter the repository — which also means a GitHub Actions workflow would check out a repo
-without them and publish dead links. `npm run deploy` builds locally, where the files are, and
-pushes only the built output. To commit the files instead, drop the `public/courses/*` lines from
-`.gitignore`.
+Add or change a file, then:
+
+```bash
+npm run files:push     # publish the files
+git push               # publish the content file; the workflow rebuilds
+```
+
+If the release does not exist yet the build still succeeds — it logs a warning and the download
+links 404 until you push the files. Missing files are listed by `npm run check:content`, in the
+workflow's job summary, and in the app's Settings page.
+
+To commit the files instead, drop these lines from `.gitignore` and skip `files:push` entirely; the
+workflow uses whatever is already on disk:
+
+```
+public/courses/*
+!public/courses/.gitkeep
+```
+
+### Deploying by hand
+
+`npm run deploy` still builds locally and pushes `dist/` to a `gh-pages` branch, for when you would
+rather not use Actions. It needs **Pages → Source** set to the `gh-pages` branch instead, so pick
+one method or the other — with the source set to GitHub Actions, a `gh-pages` push publishes
+nothing.
+
+The base path is worked out from the repository name: `/Academic-Course-Management/` for a project
+site, `/` for a `<user>.github.io` repo. Override it with `BASE_PATH=/ npm run build` for a custom
+domain.
 
 ## Editing in the browser
 
@@ -122,12 +165,15 @@ shortcuts (⌘K, `/`, Esc), toast notifications, and JSON export and import from
 ## Layout
 
 ```
+\.github/workflows/
+  deploy.yml       build on every push and PR, deploy main to Pages
 content/
   courses.yaml     the site's content — courses, materials, assignments, people
   README.md        every field, documented
-public/courses/    course files, git-ignored, published with the site
+public/courses/    course files — not in git, kept in a release asset
 scripts/
   check-content.mjs  YAML ↔ files on disk
+  course-files.mjs   push/pull the files to and from the release
 src/
   components/
     assignments/   assignment row and form
